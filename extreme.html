@@ -1,0 +1,417 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="user-scalable=no">
+    <title>volumeshader_bm_extreme</title>
+    <style>
+        body {
+            background: #131115;
+        }
+        #c1 {
+            background: #fbf7fe;
+            position: fixed;
+            left: 0px;
+            top: 0px;
+        }
+        #btn {
+            position: fixed;
+            left: 0px;
+            top: 0px;
+        }
+        #main {
+            transform-origin: 0px 0px;
+            position: fixed;
+            left: 0px;
+            top: 0px;
+        }
+        #config {
+            position: fixed;
+            left: 0px;
+            top: 30px;
+            display: none;
+        }
+    </style>
+</head>
+<body style="overflow:hidden">
+<div id="main">
+    <!-- Increase canvas resolution from 1024 to 2048 -->
+    <canvas id="c1" width="2048" height="2048">
+        <span>Your browser does not support canvas</span>
+    </canvas>
+</div>
+<button id="btn">CONFIG</button>
+<div id="config">
+    <textarea id="kernel" cols="30" rows="10"></textarea>
+    <br />
+    <button id="apply">APPLY</button>
+    <button id="cancle">CANCEL</button>
+</div>
+<script>
+alert("Kiểm tra hàm lượng giác và hàm lượng giác ngược \nĐây là bản mod với đồ hoạ nặng hơn, stress test GPU, nếu bạn không thấy gì thì trình duyệt đã kích hoạt cơ chế failsafe huỷ canvas để bảo đảm an toàn cho máy\n Bản gốc của cznull@bilibili");
+
+var cx, cy;
+var glposition, glright, glforward, glup, glorigin, glx, gly, gllen;
+var canvas, gl;
+var date = new Date();
+var t2, t1 = date.getTime();
+var mx = 0, my = 0, mx1 = 0, my1 = 0, lasttimen = 0;
+var ml = 0, mr = 0, mm = 0;
+var len = 1.6;
+var ang1 = 2.8;
+var ang2 = 0.4;
+var cenx = 0.0, ceny = 0.0, cenz = 0.0;
+
+// Increase the complexity of the kernel function: increase the number of loops and add complex operations
+var KERNEL = "float kernal(vec3 ver){\n" +
+"   vec3 a = ver;\n" +
+"   float b, c, d, e;\n" +
+"   for (int i = 0; i < 50; i++){\n" +  // 5->50
+"       b = length(a);\n" +
+"       c = atan(a.y, a.x) * 8.0;\n" +
+"       d = acos(a.z/(b+0.0001)) * 8.0;\n" +
+"       e = sin(b)*cos(b)*tan(b)*log(b+1.0);\n" +
+"       b = pow(b, 2.0 + mod(float(i), 3.0));\n" +
+"       a = vec3(b*sin(d+e)*cos(c+e), b*sin(d-e)*sin(c-e), b*cos(d+e)) + ver;\n" +
+"       if(b > 10.0){\n" +
+"           break;\n" +
+"       }\n" +
+"   }\n" +
+"   return 4.0 - dot(a, a);\n" +
+"}";
+
+var vertshade, fragshader, shaderProgram;
+
+function ontimer() {
+    ang1 += 0.01;
+    draw();
+    window.requestAnimationFrame(ontimer);
+}
+
+document.addEventListener("mousedown", function (ev) {
+    var oEvent = ev || event;
+    if (oEvent.button === 0) { ml = 1; mm = 0; }
+    if (oEvent.button === 2) { mr = 1; mm = 0; }
+    mx = oEvent.clientX; my = oEvent.clientY;
+}, false);
+
+document.addEventListener("mouseup", function (ev) {
+    var oEvent = ev || event;
+    if (oEvent.button === 0) { ml = 0; }
+    if (oEvent.button === 2) { mr = 0; }
+}, false);
+
+document.addEventListener("mousemove", function (ev) {
+    var oEvent = ev || event;
+    if (ml === 1) {
+        ang1 += (oEvent.clientX - mx) * 0.002;
+        ang2 += (oEvent.clientY - my) * 0.002;
+        mm = (oEvent.clientX !== mx || oEvent.clientY !== my) ? 1 : mm;
+    }
+    if (mr === 1) {
+        var l = len * 4.0 / (cx + cy);
+        cenx += l * (-(oEvent.clientX - mx) * Math.sin(ang1) - (oEvent.clientY - my) * Math.sin(ang2) * Math.cos(ang1));
+        ceny += l * ((oEvent.clientY - my) * Math.cos(ang2));
+        cenz += l * ((oEvent.clientX - mx) * Math.cos(ang1) - (oEvent.clientY - my) * Math.sin(ang2) * Math.sin(ang1));
+        mm = (oEvent.clientX !== mx || oEvent.clientY !== my) ? 1 : mm;
+    }
+    mx = oEvent.clientX; my = oEvent.clientY;
+}, false);
+
+document.addEventListener("mousewheel", function (ev) {
+    ev.preventDefault();
+    var oEvent = ev || event;
+    len *= Math.exp(-0.001 * oEvent.wheelDelta);
+}, false);
+
+document.addEventListener("touchstart", function (ev) {
+    var n = ev.touches.length;
+    if (n === 1) {
+        var oEvent = ev.touches[0];
+        mx = oEvent.clientX; my = oEvent.clientY;
+    } else if (n === 2) {
+        var oEvent = ev.touches[0];
+        mx = oEvent.clientX; my = oEvent.clientY;
+        oEvent = ev.touches[1];
+        mx1 = oEvent.clientX; my1 = oEvent.clientY;
+    }
+    lasttimen = n;
+}, false);
+
+document.addEventListener("touchend", function (ev) {
+    var n = ev.touches.length;
+    if (n === 1) {
+        var oEvent = ev.touches[0];
+        mx = oEvent.clientX; my = oEvent.clientY;
+    } else if (n === 2) {
+        var oEvent = ev.touches[0];
+        mx = oEvent.clientX; my = oEvent.clientY;
+        oEvent = ev.touches[1];
+        mx1 = oEvent.clientX; my1 = oEvent.clientY;
+    }
+    lasttimen = n;
+}, false);
+
+document.addEventListener("touchmove", function (ev) {
+    ev.preventDefault();
+    var n = ev.touches.length;
+    if (n === 1 && lasttimen === 1) {
+        var oEvent = ev.touches[0];
+        ang1 += (oEvent.clientX - mx) * 0.002;
+        ang2 += (oEvent.clientY - my) * 0.002;
+        mx = oEvent.clientX; my = oEvent.clientY;
+    } else if (n === 2) {
+        var oEvent = ev.touches[0];
+        var oEvent1 = ev.touches[1];
+        var l = len * 2.0 / (cx + cy), l1;
+        cenx += l * (-(oEvent.clientX + oEvent1.clientX - mx - mx1) * Math.sin(ang1) - (oEvent.clientY + oEvent1.clientY - my - my1) * Math.sin(ang2) * Math.cos(ang1));
+        ceny += l * ((oEvent.clientY + oEvent1.clientY - my - my1) * Math.cos(ang2));
+        cenz += l * ((oEvent.clientX + oEvent1.clientX - mx - mx1) * Math.cos(ang1) - (oEvent.clientY + oEvent1.clientY - my - my1) * Math.sin(ang2) * Math.sin(ang1));
+        l1 = Math.sqrt((mx - mx1) * (mx - mx1) + (my - my1) * (my - my1) + 1.0);
+        mx = oEvent.clientX; my = oEvent.clientY;
+        mx1 = oEvent1.clientX; my1 = oEvent1.clientY;
+        l = Math.sqrt((mx - mx1) * (mx - mx1) + (my - my1) * (my - my1) + 1.0);
+        len *= l1 / l;
+    }
+    lasttimen = n;
+}, false);
+
+document.oncontextmenu = function (event) {
+    if (mm === 1) { event.preventDefault(); }
+};
+
+function draw() {
+    date = new Date();
+    t2 = date.getTime();
+    t1 = t2;
+    gl.uniform1f(glx, cx * 2.0 / (cx + cy));
+    gl.uniform1f(gly, cy * 2.0 / (cx + cy));
+    gl.uniform1f(gllen, len);
+    gl.uniform3f(glorigin, len * Math.cos(ang1) * Math.cos(ang2) + cenx, len * Math.sin(ang2) + ceny, len * Math.sin(ang1) * Math.cos(ang2) + cenz);
+    gl.uniform3f(glright, Math.sin(ang1), 0, -Math.cos(ang1));
+    gl.uniform3f(glup, -Math.sin(ang2) * Math.cos(ang1), Math.cos(ang2), -Math.sin(ang2) * Math.sin(ang1));
+    gl.uniform3f(glforward, -Math.cos(ang1) * Math.cos(ang2), -Math.sin(ang2), -Math.sin(ang1) * Math.cos(ang2));
+    gl.drawArrays(gl.TRIANGLES, 0, 6);
+    gl.finish();
+}
+
+window.onresize = function () {
+    cx = document.body.clientWidth;
+    cy = document.body.clientHeight;
+    var s = Math.min(cx,cy);
+    document.getElementById("main").style.width = "2048px";
+    document.getElementById("main").style.height = "2048px";
+    document.getElementById("main").style.transform = "scale(" + (s/2048) + "," + (s/2048) + ")";
+}
+
+window.onload = function () {
+    cx = document.body.clientWidth;
+    cy = document.body.clientHeight;
+    var s = Math.min(cx,cy);
+    document.getElementById("main").style.width = "2048px";
+    document.getElementById("main").style.height = "2048px";
+    document.getElementById("main").style.transform = "scale(" + (s/2048) + "," + (s/2048) + ")";
+    // Location of the vertices of a rectangle
+    var positions = [
+       -1.0, -1.0, 0.0,
+        1.0, -1.0, 0.0,
+        1.0,  1.0, 0.0,
+       -1.0, -1.0, 0.0,
+        1.0,  1.0, 0.0,
+       -1.0,  1.0, 0.0
+    ];
+    var VSHADER_SOURCE =
+        "#version 100\n" +
+        "precision highp float;\n" +
+        "attribute vec4 position;\n" +
+        "varying vec3 dir, localdir;\n" +
+        "uniform vec3 right, forward, up, origin;\n" +
+        "uniform float x, y;\n" +
+        "void main() {\n" +
+        "   gl_Position = position;\n" +
+        "   dir = forward + right * position.x * x + up * position.y * y;\n" +
+        "   localdir = vec3(position.x*x, position.y*y, -1.0);\n" +
+        "}\n";
+    // Increased computational intensity in fragment shaders:
+    var FSHADER_SOURCE =
+        "#version 100\n" +
+        "#define PI 3.14159265358979324\n" +
+        "#define M_L 0.3819660113\n" +
+        "#define M_R 0.6180339887\n" +
+        "#define MAXR 16\n" +    // + MAXR
+        "#define SOLVER 20\n" +  // + SOLVER
+        "precision highp float;\n" +
+        "float kernal(vec3 ver);\n" +
+        "uniform vec3 right, forward, up, origin;\n" +
+        "varying vec3 dir, localdir;\n" +
+        "uniform float len;\n" +
+        "vec3 ver;\n" +
+        "int sign;\n" +
+        "float v, v1, v2;\n" +
+        "float r1, r2, r3, r4, m1, m2, m3, m4;\n" +
+        "vec3 n, reflect;\n" +
+        "const float step = 0.002;\n" +
+        "vec3 color;\n" +
+        "void main() {\n" +
+        "   color = vec3(0.0);\n" +
+        "   sign = 0;\n" +
+        "   v1 = kernal(origin + dir * (step * len));\n" +
+        "   v2 = kernal(origin);\n" +
+        "   // Tăng số bước ray marching từ 1002 lên 2002\n" +
+        "   for (int k = 2; k < 2002; k++) {\n" +
+        "      ver = origin + dir * (step * len * float(k));\n" +
+        "      v = kernal(ver);\n" +
+        "      if (v > 0.0 && v1 < 0.0) {\n" +
+        "         r1 = step * len * float(k - 1);\n" +
+        "         r2 = step * len * float(k);\n" +
+        "         m1 = kernal(origin + dir * r1);\n" +
+        "         m2 = kernal(origin + dir * r2);\n" +
+        "         for (int l = 0; l < SOLVER; l++) {\n" +
+        "            r3 = (r1 + r2) * 0.5;\n" +
+        "            m3 = kernal(origin + dir * r3);\n" +
+        "            if (m3 > 0.0) { r2 = r3; m2 = m3; }\n" +
+        "            else { r1 = r3; m1 = m3; }\n" +
+        "         }\n" +
+        "         if (r3 < 2.0 * len) { sign = 1; break; }\n" +
+        "      }\n" +
+        "      if (v < v1 && v1 > v2 && v1 < 0.0 && (v1 * 2.0 > v || v1 * 2.0 > v2)) {\n" +
+        "         r1 = step * len * float(k - 2);\n" +
+        "         r2 = step * len * (float(k) - 2.0 + 2.0 * M_L);\n" +
+        "         r3 = step * len * (float(k) - 2.0 + 2.0 * M_R);\n" +
+        "         r4 = step * len * float(k);\n" +
+        "         m2 = kernal(origin + dir * r2);\n" +
+        "         m3 = kernal(origin + dir * r3);\n" +
+        "         for (int l = 0; l < MAXR; l++) {\n" +
+        "            if (m2 > m3) {\n" +
+        "               r4 = r3;\n" +
+        "               r3 = r2;\n" +
+        "               r2 = r4 * M_L + r1 * M_R;\n" +
+        "               m3 = m2;\n" +
+        "               m2 = kernal(origin + dir * r2);\n" +
+        "            } else {\n" +
+        "               r1 = r2;\n" +
+        "               r2 = r3;\n" +
+        "               r3 = r4 * M_R + r1 * M_L;\n" +
+        "               m2 = m3;\n" +
+        "               m3 = kernal(origin + dir * r3);\n" +
+        "            }\n" +
+        "         }\n" +
+        "         if (m2 > 0.0) {\n" +
+        "            r1 = step * len * float(k - 2);\n" +
+        "            m1 = kernal(origin + dir * r1);\n" +
+        "            for (int l = 0; l < SOLVER; l++) {\n" +
+        "               r3 = (r1 + r2) * 0.5;\n" +
+        "               m3 = kernal(origin + dir * r3);\n" +
+        "               if (m3 > 0.0) { r2 = r3; m2 = m3; }\n" +
+        "               else { r1 = r3; m1 = m3; }\n" +
+        "            }\n" +
+        "            if (r3 < 2.0 * len && r3 > step * len) { sign = 1; break; }\n" +
+        "         } else if (m3 > 0.0) {\n" +
+        "            r1 = step * len * float(k - 2);\n" +
+        "            r2 = r3;\n" +
+        "            m1 = kernal(origin + dir * r1);\n" +
+        "            for (int l = 0; l < SOLVER; l++) {\n" +
+        "               r3 = (r1 + r2) * 0.5;\n" +
+        "               m3 = kernal(origin + dir * r3);\n" +
+        "               if (m3 > 0.0) { r2 = r3; m2 = m3; }\n" +
+        "               else { r1 = r3; m1 = m3; }\n" +
+        "            }\n" +
+        "            if (r3 < 2.0 * len && r3 > step * len) { sign = 1; break; }\n" +
+        "         }\n" +
+        "      }\n" +
+        "      v2 = v1;\n" +
+        "      v1 = v;\n" +
+        "   }\n" +
+        "   if (sign == 1) {\n" +
+        "      ver = origin + dir * r3;\n" +
+        "      float rtemp = dot(ver, ver);\n" +
+        "      n.x = kernal(ver - right * (r3 * 0.00025)) - kernal(ver + right * (r3 * 0.00025));\n" +
+        "      n.y = kernal(ver - up * (r3 * 0.00025)) - kernal(ver + up * (r3 * 0.00025));\n" +
+        "      n.z = kernal(ver + forward * (r3 * 0.00025)) - kernal(ver - forward * (r3 * 0.00025));\n" +
+        "      float nlen = dot(n, n);\n" +
+        "      n = n * (1.0 / sqrt(nlen + 0.0001));\n" +
+        "      ver = localdir;\n" +
+        "      float ldir = dot(ver, ver);\n" +
+        "      ver = ver * (1.0 / sqrt(ldir + 0.0001));\n" +
+        "      reflect = n * (-2.0 * dot(ver, n)) + ver;\n" +
+        "      r3 = reflect.x * 0.276 + reflect.y * 0.920 + reflect.z * 0.276;\n" +
+        "      float r4 = n.x * 0.276 + n.y * 0.920 + n.z * 0.276;\n" +
+        "      r3 = max(0.0, r3);\n" +
+        "      r3 = pow(r3, 4.0);\n" +
+        "      r3 = r3 * 0.45 + r4 * 0.25 + 0.3;\n" +
+        "      n.x = sin(rtemp * 10.0) * 0.5 + 0.5;\n" +
+        "      n.y = sin(rtemp * 10.0 + 2.05) * 0.5 + 0.5;\n" +
+        "      n.z = sin(rtemp * 10.0 - 2.05) * 0.5 + 0.5;\n" +
+        "      color = n * r3;\n" +
+        "   }\n" +
+        "   gl_FragColor = vec4(color, 1.0);\n" +
+        "}\n";
+    
+    canvas = document.getElementById('c1');
+    gl = canvas.getContext('webgl');
+    vertshade = gl.createShader(gl.VERTEX_SHADER);
+    fragshader = gl.createShader(gl.FRAGMENT_SHADER);
+    shaderProgram = gl.createProgram();
+    gl.shaderSource(vertshade, VSHADER_SOURCE);
+    gl.compileShader(vertshade);
+    var infov = gl.getShaderInfoLog(vertshade);
+    gl.shaderSource(fragshader, FSHADER_SOURCE + KERNEL);
+    gl.compileShader(fragshader);
+    var infof = gl.getShaderInfoLog(fragshader);
+    gl.attachShader(shaderProgram, vertshade);
+    gl.attachShader(shaderProgram, fragshader);
+    gl.linkProgram(shaderProgram);
+    gl.useProgram(shaderProgram);
+    if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
+        var info = gl.getProgramInfoLog(shaderProgram);
+        throw 'Could not compile WebGL program. \n\n' + infov + infof + info;
+    }
+    glposition = gl.getAttribLocation(shaderProgram, 'position');
+    glright = gl.getUniformLocation(shaderProgram, 'right');
+    glforward = gl.getUniformLocation(shaderProgram, 'forward');
+    glup = gl.getUniformLocation(shaderProgram, 'up');
+    glorigin = gl.getUniformLocation(shaderProgram, 'origin');
+    glx = gl.getUniformLocation(shaderProgram, 'x');
+    gly = gl.getUniformLocation(shaderProgram, 'y');
+    gllen = gl.getUniformLocation(shaderProgram, 'len');
+    var buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
+    gl.vertexAttribPointer(glposition, 3, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(glposition);
+
+    gl.viewport(0, 0, 2048, 2048);
+    draw();
+    window.requestAnimationFrame(ontimer);
+    document.getElementById("kernel").value = KERNEL;
+    document.getElementById("btn").addEventListener("click", function() {
+        var state = (this.innerText === "CONFIG");
+        this.innerText = state ? "HIDE" : "CONFIG";
+        document.getElementById("config").style.display = state ? "inline" : "none";
+    });
+    document.getElementById("apply").addEventListener("click", function() {
+        KERNEL = document.getElementById("kernel").value;
+        gl.shaderSource(fragshader, FSHADER_SOURCE + KERNEL);
+        gl.compileShader(fragshader);
+        var infof = gl.getShaderInfoLog(fragshader);
+        gl.linkProgram(shaderProgram);
+        gl.useProgram(shaderProgram);
+        if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
+            var info = gl.getProgramInfoLog(shaderProgram);
+            alert(infof + info);
+        }
+        glposition = gl.getAttribLocation(shaderProgram, 'position');
+        glright = gl.getUniformLocation(shaderProgram, 'right');
+        glforward = gl.getUniformLocation(shaderProgram, 'forward');
+        glup = gl.getUniformLocation(shaderProgram, 'up');
+        glorigin = gl.getUniformLocation(shaderProgram, 'origin');
+        glx = gl.getUniformLocation(shaderProgram, 'x');
+        gly = gl.getUniformLocation(shaderProgram, 'y');
+        gllen = gl.getUniformLocation(shaderProgram, 'len');
+    });
+    document.getElementById("cancle").addEventListener("click", function() {
+        document.getElementById("kernel").value = KERNEL;
+    });
+}
+</script>
+</body>
+</html>
