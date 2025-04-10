@@ -25,3 +25,12 @@ setInterval(() => {
     devtoolsOpen = false;
   }
 }, 500);
+document.addEventListener("keydown", function (event) {
+  if (
+      event.key === "F12" || 
+      (event.ctrlKey && ["u", "s"].includes(event.key)) || 
+      (event.ctrlKey && event.shiftKey && ["I", "J", "C"].includes(event.key))
+  ) {
+      event.preventDefault();
+  }
+});
