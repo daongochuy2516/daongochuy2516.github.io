@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Restarting...</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .container {
+      background-color: #fff;
+      padding: 30px 40px;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      text-align: center;
+      max-width: 400px;
+      width: 100%;
+    }
+
+    .success {
+      font-size: 20px;
+      font-weight: bold;
+      color: #4CAF50;
+      margin-bottom: 10px;
+    }
+
+    .message {
+      font-size: 15px;
+      color: #555;
+      margin-bottom: 25px;
+    }
+
+    .progress-bar {
+      position: relative;
+      height: 12px;
+      width: 100%;
+      background-color: #e0e0e0;
+      border-radius: 6px;
+      overflow: hidden;
+      box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+
+    .indeterminate {
+      position: absolute;
+      height: 100%;
+      background-color: #4CAF50;
+      animation: fillBar 3s forwards;
+      border-radius: 6px;
+    }
+
+    @keyframes fillBar {
+      0% {
+        left: 0;
+        width: 0;
+      }
+      100% {
+        left: 0;
+        width: 100%;
+      }
+    }
+
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="success">Success!</div>
+    <div class="message">Settings have been saved on this device. <br>Please wait while the device restarts...</div>
+    <div class="progress-bar">
+      <div class="indeterminate"></div>
+    </div>
+  </div>
+</body>
+</html>
