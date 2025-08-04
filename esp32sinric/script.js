@@ -288,7 +288,6 @@ async function cleanupConnection() {
     document.getElementById("configForm").classList.add("hidden");
 }
 
-// Hàm gọi khi user nhấn nút disconnect
 async function userDisconnect() {
     await cleanupConnection();
     Swal.fire({
@@ -300,7 +299,7 @@ async function userDisconnect() {
     });
 }
 
-// Xử lý sự kiện disconnect do rút cổng
+
 async function handleUsbDisconnect(event) {
     if (event.target === port) {
         console.warn("[USB] Disconnected by user");
@@ -333,3 +332,4 @@ document.querySelectorAll(".toggle-password").forEach(function(toggle) {
         this.classList.toggle("fa-eye-slash");
     });
 });
+
