@@ -60,9 +60,9 @@
         <div class="form-group">
             <label for="wolMode">Wake-on-LAN Mode:</label>
             <select id="wolMode" name="wolMode" class="custom-select">
-                <option value="both" %WOL_MODE_BOTH%>Allow both</option>
-                <option value="sinric" %WOL_MODE_SINRIC%>SinricPro only</option>
-                <option value="physical" %WOL_MODE_PHYSICAL%>Physical button only</option>
+                <option value="both">Allow both</option>
+                <option value="sinric">SinricPro only</option>
+                <option value="physical">Physical button only</option>
             </select>
             <small class="note">Choose how the PC can be turned on.</small>
         </div>
@@ -71,7 +71,7 @@
         <div class="toggle-group">
             <label for="enableLed">Enable LED RGB Effect</label>
             <label class="switch">
-                <input type="checkbox" id="enableLed" name="enableLed" %ENABLE_LED%>
+                <input type="checkbox" id="enableLed" name="enableLed">
                 <span class="slider"></span>
             </label>
         </div>
@@ -79,7 +79,7 @@
         <div class="toggle-group">
             <label for="enableBuzzer">Enable Buzzer</label>
             <label class="switch">
-                <input type="checkbox" id="enableBuzzer" name="enableBuzzer" %ENABLE_BUZZER%>
+                <input type="checkbox" id="enableBuzzer" name="enableBuzzer">
                 <span class="slider"></span>
             </label>
         </div>
@@ -95,4 +95,5 @@
     </footer>
 
 </body>
+
 </html>
