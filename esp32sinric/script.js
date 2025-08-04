@@ -1,6 +1,7 @@
 let port;
 let reader;
 let isConnected = false;
+let originalConfig = {};
 
 async function connectDevice() {
     try {
@@ -19,7 +20,7 @@ async function connectDevice() {
 
         while (attempt < maxAttempts && !config) {
             try {
-                console.log(`Attempt ${attempt + 1} to get config...`);
+                //console.log(`Attempt ${attempt + 1} to get config...`);
                 await writer.write(encoder.encode("GET_CONFIG\n"));
                 let configData = "";
                 reader = port.readable.getReader();
@@ -56,6 +57,7 @@ async function connectDevice() {
 
         fillForm(config);
         isConnected = true;
+        originalConfig = config;
         document.getElementById("fakeBtn").classList.add("hidden");
         const connectBtn = document.getElementById("connectBtn");
         let originalHeight = connectBtn.offsetHeight + "px";
@@ -143,26 +145,43 @@ async function sendConfig(event) {
         Swal.fire({
             icon: "warning",
             title: "Device not connected",
-            text: "Please connect the device first."
+            text: "Please connect the device first. Also, nice try submitting a hidden form."
         });
         return;
     }
-
-    const config = {
-        ssid: document.getElementById("ssid").value,
-        password: document.getElementById("password").value,
-        appKey: document.getElementById("appKey").value,
-        appSecret: document.getElementById("appSecret").value,
-        deviceId: document.getElementById("deviceId").value,
-        pcMac: document.getElementById("pcMac").value,
+    document.getElementById("configForm").classList.add("form-disabled"); //disable form to prevent multiple submissions
+    const currentForm = {
+        ssid: document.getElementById("ssid").value.trim(),
+        password: document.getElementById("password").value.trim(),
+        appKey: document.getElementById("appKey").value.trim(),
+        appSecret: document.getElementById("appSecret").value.trim(),
+        deviceId: document.getElementById("deviceId").value.trim(),
+        pcMac: document.getElementById("pcMac").value.trim(),
         wolMode: document.getElementById("wolMode").value,
         enableLed: document.getElementById("enableLed").checked,
         enableBuzzer: document.getElementById("enableBuzzer").checked
     };
 
-    const jsonData = JSON.stringify(config) + "\n";
+    const configToSend = {};
+    for (const key in currentForm) {
+        if (currentForm[key] !== originalConfig[key]) {
+            configToSend[key] = currentForm[key];
+        }
+    }
+    if (Object.keys(configToSend).length === 0) {
+        Swal.fire({
+            icon: "info",
+            title: "No Changes",
+            text: "You didn’t change anything.",
+            timer: 2000,
+            showConfirmButton: false
+        });
+        return;
+    }
+
 
     try {
+        const jsonData = JSON.stringify(currentForm) + "\n";
         const writer = port.writable.getWriter();
         await writer.write(new TextEncoder().encode(jsonData));
         await writer.write(new TextEncoder().encode("RESTART\n"));
@@ -218,24 +237,17 @@ async function sendConfig(event) {
             return;
         }
 
-        const isMatch = (
-            newConfig.ssid === config.ssid &&
-            newConfig.password === config.password &&
-            newConfig.appKey === config.appKey &&
-            newConfig.appSecret === config.appSecret &&
-            newConfig.deviceId === config.deviceId &&
-            newConfig.pcMac === config.pcMac &&
-            newConfig.wolMode === config.wolMode &&
-            newConfig.enableLed === config.enableLed &&
-            newConfig.enableBuzzer === config.enableBuzzer
-        );
+        const isMatch = compare(currentForm, newConfig);
+
 
         if (isMatch) {
+            originalConfig = currentForm;
             Swal.fire({
                 icon: "success",
-                title: "✅ Verified",
+                title: "✅ Successful",
                 text: "Config saved and verified successfully!"
             });
+            document.getElementById("configForm").classList.remove("form-disabled"); //enable form again
             document.getElementById("statusText").innerText =
                 `✅ Connected to device. Firmware: ${newConfig.firmwareVersion || "N/A"}`;
             document.getElementById("connectBtn").classList.add("connected");
@@ -245,9 +257,11 @@ async function sendConfig(event) {
                 title: "⚠️ Config Mismatch",
                 text: "Device config does not match after reboot."
             });
+            document.getElementById("configForm").classList.remove("form-disabled");//enable form again
         }
 
     } catch (err) {
+        console.error("Stack trace:\n" + err.stack);
         Swal.fire({
             icon: "error",
             title: "❌ Error",
@@ -257,6 +271,7 @@ async function sendConfig(event) {
 }
 async function cleanupConnection() {
     isConnected = false;
+    originalConfig = {};
     document.getElementById("fakeBtn").classList.remove("hidden");
     navigator.serial.removeEventListener("disconnect", handleUsbDisconnect);
     try {
@@ -288,6 +303,7 @@ async function cleanupConnection() {
     document.getElementById("configForm").classList.add("hidden");
 }
 
+// Hàm gọi khi user nhấn nút disconnect
 async function userDisconnect() {
     await cleanupConnection();
     Swal.fire({
@@ -299,7 +315,7 @@ async function userDisconnect() {
     });
 }
 
-
+// Xử lý sự kiện disconnect do rút cổng
 async function handleUsbDisconnect(event) {
     if (event.target === port) {
         console.warn("[USB] Disconnected by user");
@@ -310,6 +326,13 @@ async function handleUsbDisconnect(event) {
             text: "Device was disconnected. Please reconnect.",
         });
     }
+}
+
+function compare(a, b) {
+    for (let key in a) {
+        if (a[key] !== b[key]) return false;
+    }
+    return true;
 }
 
 function delay(ms) {
@@ -323,8 +346,8 @@ fakeBtn.addEventListener('click', () => {
     realBtn.shadowRoot.querySelector('button').click();
 });
 
-document.querySelectorAll(".toggle-password").forEach(function(toggle) {
-    toggle.addEventListener("click", function() {
+document.querySelectorAll(".toggle-password").forEach(function (toggle) {
+    toggle.addEventListener("click", function () {
         const targetId = this.getAttribute("data-target");
         const input = document.getElementById(targetId);
         const type = input.getAttribute("type") === "password" ? "text" : "password";
@@ -332,4 +355,3 @@ document.querySelectorAll(".toggle-password").forEach(function(toggle) {
         this.classList.toggle("fa-eye-slash");
     });
 });
-

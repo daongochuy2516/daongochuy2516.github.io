@@ -38,6 +38,11 @@ h2 {
 
 }
 
+.form-disabled {
+  pointer-events: none;
+  opacity: 0.6;
+}
+
 .hidden {
     display: none;
 }
@@ -249,4 +254,8 @@ small.note {
 
 .custom-select:hover {
     background-color: #f0f0f0;
+}
+
+.underline {
+    text-decoration: underline;
 }
