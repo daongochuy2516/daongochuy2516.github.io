@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESP32 SinricPro Web Manager</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script type="module" src="https://unpkg.com/esp-web-tools@9.0.3/dist/web/install-button.js"></script>
+    <script src="script.js" defer></script>
+</head>
+
+<body>
+
+    <h2>ESP32 - SinricPro Web Manager (USB)</h2>
+    <div id="connectusb" class="box">
+        <esp-web-install-button id="realBtn" manifest="firmware/manifest.json" class="hidden"></esp-web-install-button>
+        <button id="fakeBtn" class="btn">⚡Flash Firmware</button>
+        <button onclick="connectDevice()" id="connectBtn" class="btnconnect">🔌 Connect to Device</button>
+        <p id="statusText" style="margin: 10px; font-size: 14px; color: #666;">Not connected.</p>
+    </div>
+    <br>
+
+    <form class="boxform hidden" id="configForm" onsubmit="sendConfig(event)">
+        <label for="ssid">Wi-Fi name (ONLY 2.4GHz pls):</label>
+        <div class="input-container">
+            <input type="text" id="ssid" name="ssid" placeholder="WiFi Name">
+        </div>
+
+        <label for="password">Wi-Fi Password:</label>
+        <div class="input-container">
+            <input type="password" id="password" name="password" placeholder="WiFi Password">
+            <i class="fa-solid fa-eye toggle-password" data-target="password"></i>
+        </div>
+
+        <label for="appKey">APP KEY:</label>
+        <div class="input-container">
+            <input type="password" id="appKey" name="appKey" placeholder="App Key">
+            <i class="fa-solid fa-eye toggle-password" data-target="appKey"></i>
+        </div>
+
+        <label for="appSecret">APP SECRET:</label>
+        <div class="input-container">
+            <input type="password" id="appSecret" name="appSecret" placeholder="App Secret">
+            <i class="fa-solid fa-eye toggle-password" data-target="appSecret"></i>
+        </div>
+
+        <label for="deviceId">DEVICE ID:</label>
+        <div class="input-container">
+            <input type="text" id="deviceId" name="deviceId" placeholder="Device ID">
+        </div>
+
+        <label for="pcMac">PC MAC Address:</label>
+        <div class="input-container">
+            <input type="text" id="pcMac" name="pcMac" placeholder="00:1A:2B:3C:4D:5E">
+        </div>
+
+        <div class="form-group">
+            <label for="wolMode">Wake-on-LAN Mode:</label>
+            <select id="wolMode" name="wolMode" class="custom-select">
+                <option value="both">Allow both</option>
+                <option value="sinric">SinricPro only</option>
+                <option value="physical">Physical button only</option>
+            </select>
+            <small class="note">Choose how the PC can be turned on.</small>
+        </div>
+
+
+        <div class="toggle-group">
+            <label for="enableLed">Enable LED RGB Effect</label>
+            <label class="switch">
+                <input type="checkbox" id="enableLed" name="enableLed">
+                <span class="slider"></span>
+            </label>
+        </div>
+
+        <div class="toggle-group">
+            <label for="enableBuzzer">Enable Buzzer</label>
+            <label class="switch">
+                <input type="checkbox" id="enableBuzzer" name="enableBuzzer">
+                <span class="slider"></span>
+            </label>
+        </div>
+
+        <input type="submit" value="Save" class="btn">
+    </form>
+
+    <footer>
+        <p>You must connect this device to your own SinricPro account for it to function properly.<br>
+            Otherwise, the device will not work correctly!<br>
+            Copyright © daongochuy2516
+        </p>
+    </footer>
+
+</body>
+
+</html>
