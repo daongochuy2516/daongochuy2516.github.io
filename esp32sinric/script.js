@@ -149,7 +149,7 @@ async function sendConfig(event) {
         });
         return;
     }
-    document.getElementById("configForm").classList.add("form-disabled"); //disable form to prevent multiple submissions
+     //disable form to prevent multiple submissions
     const currentForm = {
         ssid: document.getElementById("ssid").value.trim(),
         password: document.getElementById("password").value.trim(),
@@ -181,6 +181,7 @@ async function sendConfig(event) {
 
 
     try {
+        document.getElementById("configForm").classList.add("form-disabled");
         const jsonData = JSON.stringify(currentForm) + "\n";
         const writer = port.writable.getWriter();
         await writer.write(new TextEncoder().encode(jsonData));
