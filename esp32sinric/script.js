@@ -3,6 +3,18 @@ let reader;
 let isConnected = false;
 let originalConfig = {};
 
+fetch('firmware/manifest.json')
+  .then(response => response.json())
+  .then(data => {
+    const version = data.version;
+    const button = document.getElementById('fakeBtn');
+    button.innerHTML = `⚡Flash Firmware (v${version})`;
+  })
+  .catch(error => {
+    console.error('Error fetching or parsing JSON:', error);
+  });
+
+
 async function connectDevice() {
     try {
         port = await navigator.serial.requestPort();
@@ -373,7 +385,7 @@ async function scanWifiNetworks() {
         reader = port.readable.getReader();
 
         const wifiSelect = document.getElementById("wifiList");
-        wifiSelect.innerHTML = "<option>Waiting for SCANNING...</option>";
+        wifiSelect.innerHTML = "<option>Sending command...</option>";
 
         let response = "";
         let gotScanning = false;

@@ -259,3 +259,18 @@ small.note {
 .underline {
     text-decoration: underline;
 }
+
+.scanwifi {
+    width: 100%;
+    padding: 2px;
+    border: none;
+    background-color: #007BFF;
+    color: white;
+    font-size: 16px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.scanwifi:hover {
+    background-color: #0069d9;
+}
