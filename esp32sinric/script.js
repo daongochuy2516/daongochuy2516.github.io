@@ -8,7 +8,7 @@ async function connectDevice() {
         port = await navigator.serial.requestPort();
         await port.open({ baudRate: 115200 });
 
-        document.getElementById("statusText").innerText = "Connected. Querying device...";
+        document.getElementById("statusText").innerText = "Connected. Verifying device... (if stuck here, try refreshing the page)";
 
         const writer = port.writable.getWriter();
         const encoder = new TextEncoder();
@@ -149,7 +149,7 @@ async function sendConfig(event) {
         });
         return;
     }
-     //disable form to prevent multiple submissions
+    //disable form to prevent multiple submissions
     const currentForm = {
         ssid: document.getElementById("ssid").value.trim(),
         password: document.getElementById("password").value.trim(),
@@ -356,3 +356,138 @@ document.querySelectorAll(".toggle-password").forEach(function (toggle) {
         this.classList.toggle("fa-eye-slash");
     });
 });
+
+async function scanWifiNetworks() {
+    if (!isConnected || !port || !port.writable) {
+        Swal.fire({
+            icon: "warning",
+            title: "Not connected",
+            text: "Please connect to the device first."
+        });
+        return;
+    }
+
+    try {
+        const encoder = new TextEncoder();
+        const decoder = new TextDecoder();
+        reader = port.readable.getReader();
+
+        const wifiSelect = document.getElementById("wifiList");
+        wifiSelect.innerHTML = "<option>Waiting for SCANNING...</option>";
+
+        let response = "";
+        let gotScanning = false;
+        const maxAttempts = 20; // Maximum number of scan attempts
+        const scanInterval = 500; // Interval between each scan (in milliseconds)
+
+        for (let attempt = 0; attempt < maxAttempts; attempt++) {
+            const writer = port.writable.getWriter();  // Create the writer for each attempt
+            // Send SCAN_WIFI command
+            await writer.write(encoder.encode("SCAN_WIFI\n"));
+            writer.releaseLock();  // Release the lock after writing
+
+            await new Promise(resolve => setTimeout(resolve, scanInterval)); // Wait for 0.5s between scans
+
+            // Read response
+            const { value, done } = await reader.read();
+            if (done) break;
+
+            const chunk = decoder.decode(value, { stream: true });
+            response += chunk;
+            if (chunk.includes("SCANNING")) {
+                gotScanning = true;
+                break;
+            }
+        }
+
+        if (!gotScanning) {
+            reader.releaseLock();
+            Swal.fire({
+                icon: "error",
+                title: "Scan failed",
+                text: "Device did not respond with 'SCANNING'."
+            });
+            return;
+        }
+
+        wifiSelect.innerHTML = "<option>Scanning WiFi networks...</option>";
+        let jsonResponse = "";
+        const jsonTimeout = 5000;
+        const jsonStartTime = Date.now();
+
+        // Attempt to read complete JSON response
+        while (Date.now() - jsonStartTime < jsonTimeout) {
+            const { value, done } = await reader.read();
+            if (done) break;
+
+            const chunk = decoder.decode(value, { stream: true });
+            jsonResponse += chunk;
+
+            // If the response contains the closing bracket ']', we can assume it's complete
+            if (jsonResponse.includes("]")) {
+                break;
+            }
+        }
+
+        reader.releaseLock();
+
+        // Ensure we only extract valid JSON data
+        const jsonStart = jsonResponse.indexOf("[");
+        const jsonEnd = jsonResponse.lastIndexOf("]") + 1;
+
+        if (jsonStart === -1 || jsonEnd === -1) {
+            throw new Error("Invalid JSON format: No valid JSON found in response");
+        }
+
+        const rawJson = jsonResponse.slice(jsonStart, jsonEnd).trim();
+
+        // Clean any non-ASCII characters or unwanted chars
+        const cleaned = rawJson.replace(/[^\x20-\x7E{}\[\]":,.\r\n]/g, "");
+
+        // Attempt to parse the JSON data
+        try {
+            const wifiList = JSON.parse(cleaned);
+
+            // Sort networks by RSSI from highest to lowest
+            wifiList.sort((a, b) => b.rssi - a.rssi);
+
+            wifiSelect.innerHTML = "";  // Clear previous options
+
+            wifiList.forEach(network => {
+                // Create option element for each network (with RSSI value)
+                const option = document.createElement("option");
+                option.value = network.ssid;
+
+                // Add SSID and RSSI info (network strength)
+                option.innerHTML = `${network.ssid} (${network.rssi} dBm) ${network.secure ? "🔒" : "🔓"}`;
+
+                // Append the option to the dropdown
+                wifiSelect.appendChild(option);
+            });
+
+            // Add event listener for Wi-Fi selection
+            wifiSelect.addEventListener("change", function () {
+                const selectedSSID = wifiSelect.value;
+                document.getElementById("ssid").value = selectedSSID; // Fill the SSID input field
+            });
+
+            // Display success message with the number of networks found
+            Swal.fire({
+                icon: "success",
+                title: "Scan complete",
+                text: `${wifiList.length} networks found.`
+            });
+
+        } catch (err) {
+            throw new Error("Failed to parse JSON response: " + err.message);
+        }
+
+    } catch (err) {
+        console.error("[WiFi SCAN ERROR]:", err);
+        Swal.fire({
+            icon: "error",
+            title: "Scan failed",
+            text: err.toString()
+        });
+    }
+}

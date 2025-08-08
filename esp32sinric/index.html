@@ -24,6 +24,16 @@
     <br>
 
     <form class="boxform hidden" id="configForm" onsubmit="sendConfig(event)">
+        <label for="wifiList">Available WiFi:</label>
+        <div class="input-container">
+            <div style="display: flex; gap: 10px;">
+                <select id="wifiList" style="flex: 1;">
+                    <option>Select to auto-fill SSID</option>
+                </select>
+                <button type="button" onclick="scanWifiNetworks()">🔍 Scan</button>
+            </div>
+        </div>
+
         <label for="ssid">Wi-Fi name (ONLY 2.4GHz pls):</label>
         <div class="input-container">
             <input type="text" id="ssid" name="ssid" placeholder="WiFi Name">
