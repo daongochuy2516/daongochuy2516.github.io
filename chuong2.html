@@ -1,0 +1,554 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Luyện tập nhị phân</title>
+<style>
+:root {
+  --bg: #f6f7fb; --card: #ffffff; --ink: #1d2433; --muted: #5d6678; --line: #dde2ec;
+  --accent: #6a3fb5; --accent-ink: #ffffff; --accent-soft: #f0eafa;
+  --ok: #0f7b5f; --ok-soft: #e6f5ef; --bad: #b4361f; --bad-soft: #fdecea; --hint: #8a5a00; --hint-soft: #fff4d9;
+  --mono: Consolas, "Cascadia Mono", "Courier New", monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #14161c; --card: #1d2029; --ink: #e7e9ef; --muted: #9aa2b3; --line: #323746;
+    --accent: #a985e6; --accent-ink: #14161c; --accent-soft: #2a2338;
+    --ok: #4cc79f; --ok-soft: #173229; --bad: #ff8a73; --bad-soft: #3a1f1a; --hint: #f0c060; --hint-soft: #33290f;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 "Segoe UI", system-ui, -apple-system, Arial, sans-serif; }
+.wrap { max-width: 780px; margin: 0 auto; padding: 20px 16px 48px; }
+header h1 { font-size: 22px; margin: 0 0 2px; }
+header p { margin: 0 0 14px; color: var(--muted); font-size: 14px; }
+.panel { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; margin-bottom: 14px; }
+.row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.lbl { font-size: 12px; font-weight: 650; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin: 0 0 6px; }
+.chip { border: 1px solid var(--line); background: transparent; color: var(--ink); border-radius: 999px; padding: 4px 11px; font: inherit; font-size: 13.5px; cursor: pointer; }
+.chip[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--ink); font-weight: 600; }
+.chip.ghost { border-style: dashed; color: var(--muted); }
+.sep { height: 10px; }
+.tag { display: inline-block; font-size: 12px; font-weight: 650; color: var(--accent); background: var(--accent-soft); border-radius: 6px; padding: 2px 8px; margin-bottom: 8px; }
+.q { font-size: 19px; font-weight: 600; margin: 0 0 12px; }
+.num { font-family: var(--mono); white-space: nowrap; }
+.num sub { font-family: "Segoe UI", Arial, sans-serif; font-size: 65%; color: var(--muted); }
+.fields { display: grid; gap: 10px; margin-bottom: 12px; }
+.field span { display: block; font-size: 13px; color: var(--muted); margin-bottom: 3px; }
+.field input { width: 100%; font: 18px var(--mono); padding: 8px 11px; border-radius: 8px; border: 1.5px solid var(--line); background: var(--bg); color: var(--ink); outline: none; }
+.field input:focus { border-color: var(--accent); }
+.field input.ok { border-color: var(--ok); background: var(--ok-soft); }
+.field input.bad { border-color: var(--bad); background: var(--bad-soft); }
+.btns { display: flex; flex-wrap: wrap; gap: 8px; }
+button.b { font: inherit; font-size: 14.5px; border-radius: 8px; padding: 7px 14px; cursor: pointer; border: 1px solid var(--line); background: var(--card); color: var(--ink); }
+button.b.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+button.b:hover { filter: brightness(.97); }
+.fb { margin-top: 12px; border-radius: 8px; padding: 8px 12px; display: none; }
+.fb.show { display: block; }
+.fb.ok { background: var(--ok-soft); color: var(--ok); }
+.fb.bad { background: var(--bad-soft); color: var(--bad); }
+.fb.hint { background: var(--hint-soft); color: var(--hint); }
+.sol { margin-top: 12px; border-top: 1px dashed var(--line); padding-top: 10px; display: none; overflow-x: auto; }
+.sol.show { display: block; }
+.sol h3 { font-size: 14px; margin: 0 0 6px; }
+.sol p { margin: 4px 0 8px; }
+table.work { border-collapse: collapse; margin: 6px 0 10px; }
+table.work td { padding: 0 4px; white-space: pre; }
+table.work td.lab { color: var(--muted); font-size: 13px; text-align: right; padding-right: 10px; }
+table.work td.tx { font-family: var(--mono); font-size: 16px; letter-spacing: .06em; }
+table.work td.note { color: var(--muted); font-size: 13px; padding-left: 14px; }
+table.work tr.rule td.tx { border-top: 1.5px solid var(--ink); }
+table.steps { border-collapse: collapse; margin: 6px 0 10px; font-size: 14px; }
+table.steps th, table.steps td { border: 1px solid var(--line); padding: 3px 9px; text-align: center; }
+table.steps th { background: var(--accent-soft); font-weight: 600; }
+table.steps td.m { font-family: var(--mono); }
+.stats { display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: center; font-size: 14px; }
+.stats b { font-size: 17px; }
+.stats .sp { flex: 1; }
+details { margin-top: 8px; }
+summary { cursor: pointer; color: var(--muted); font-size: 13.5px; }
+table.mini { border-collapse: collapse; font-size: 13px; margin-top: 6px; }
+table.mini td, table.mini th { border: 1px solid var(--line); padding: 2px 8px; }
+.ref { display: flex; flex-wrap: wrap; gap: 14px; }
+.ref table { border-collapse: collapse; font-size: 13px; }
+.ref td, .ref th { border: 1px solid var(--line); padding: 1px 7px; text-align: center; font-family: var(--mono); }
+.ref th { background: var(--accent-soft); font-family: inherit; }
+.ref ul { margin: 0; padding-left: 18px; font-size: 13.5px; }
+.kbd { font-size: 12px; color: var(--muted); margin-top: 10px; }
+.small { font-size: 13px; color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Luyện tập Chương 2 · Phép toán nhị phân</h1>
+    <p>Đề sinh ngẫu nhiên, kiểm tra ngay, có lời giải từng bước theo cách làm trong slide.</p>
+  </header>
+
+  <div class="panel">
+    <div class="lbl">Dạng bài</div>
+    <div class="row" id="types"></div>
+    <div class="sep"></div>
+    <div class="lbl">Độ khó</div>
+    <div class="row" id="levels"></div>
+  </div>
+
+  <div class="panel" id="card">
+    <span class="tag" id="tag"></span>
+    <div class="q" id="q"></div>
+    <div class="fields" id="fields"></div>
+    <div class="btns">
+      <button class="b primary" id="btnCheck">Kiểm tra</button>
+      <button class="b" id="btnHint">Gợi ý</button>
+      <button class="b" id="btnSol">Xem lời giải</button>
+      <button class="b" id="btnNext">Câu mới →</button>
+    </div>
+    <div class="fb" id="fb"></div>
+    <div class="sol" id="sol"></div>
+    <div class="kbd">Enter: kiểm tra · Enter lần nữa khi đã đúng: sang câu mới. Không cần gõ số 0 ở đầu; hệ 16 gõ hoa hay thường đều được.</div>
+  </div>
+
+  <div class="panel">
+    <div class="stats">
+      <span>Đúng <b id="sC">0</b>/<b id="sT">0</b></span>
+      <span>Tỉ lệ <b id="sP">–</b></span>
+      <span>Chuỗi đúng <b id="sS">0</b></span>
+      <span>Kỷ lục <b id="sB">0</b></span>
+      <span class="sp"></span>
+      <button class="b" id="btnReset">Xoá thống kê</button>
+    </div>
+    <details>
+      <summary>Thống kê theo dạng bài</summary>
+      <table class="mini" id="byType"></table>
+    </details>
+  </div>
+
+  <div class="panel">
+    <details>
+      <summary>Bảng tra nhanh & quy tắc</summary>
+      <div class="ref" style="margin-top:8px">
+        <table id="refTable"></table>
+        <div>
+          <ul>
+            <li>Lũy thừa của 2: 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024</li>
+            <li>2 → 8: nhóm 3 bit từ phải; 2 → 16: nhóm 4 bit từ phải</li>
+            <li>Cộng: 1+1 = 0 nhớ 1; 1+1+1 = 1 nhớ 1</li>
+            <li>Trừ: 0−1 = 1 mượn 1 (cột đó được cộng 2)</li>
+            <li>Trừ bù: đệm cùng độ dài → đảo bit số trừ → cộng → có nhớ thì bỏ nhớ và +1; không nhớ thì lấy bù của tổng, thêm dấu −</li>
+            <li>Chia: trừ được số chia thì ghi 1 vào thương, không thì ghi 0; hạ bit kế tiếp</li>
+          </ul>
+        </div>
+      </div>
+    </details>
+  </div>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const rint = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+const DIG = '0123456789ABCDEF';
+const toB = (n, b) => n.toString(b).toUpperCase();
+const strip0 = s => s.replace(/^0+(?=.)/, '');
+const invert = s => [...s].map(c => (c === '0' ? '1' : '0')).join('');
+const num = (s, b) => `<span class="num">${s}<sub>${b}</sub></span>`;
+const randBits = len => { let s = '1'; for (let i = 1; i < len; i++) s += Math.random() < 0.5 ? '0' : '1'; return s; };
+const randDigits = (len, base) => { let s = DIG[rint(1, base - 1)]; for (let i = 1; i < len; i++) s += DIG[rint(0, base - 1)]; return s; };
+const span = (L, spec) => rint(...spec[L - 1]);
+
+const TYPES = [
+  { id: 'd2b', name: 'Hệ 10 → 2/8/16' },
+  { id: 'b2d', name: 'Hệ 2/8/16 → 10' },
+  { id: 'quick', name: 'Đổi nhanh 2 ↔ 8/16' },
+  { id: 'frac', name: 'Số có phần lẻ' },
+  { id: 'add', name: 'Cộng' },
+  { id: 'sub', name: 'Trừ (mượn)' },
+  { id: 'comp', name: 'Trừ bù' },
+  { id: 'mul', name: 'Nhân' },
+  { id: 'div', name: 'Chia' },
+];
+const LEVELS = { 1: 'Dễ', 2: 'Vừa', 3: 'Khó' };
+
+// Bảng dạng phép tính: rows = [{lab, tx, note, rule}]
+function work(rows) {
+  return '<table class="work">' + rows.map(r =>
+    `<tr${r.rule ? ' class="rule"' : ''}><td class="lab">${r.lab || ''}</td><td class="tx">${r.tx}</td><td class="note">${r.note || ''}</td></tr>`
+  ).join('') + '</table>';
+}
+
+function addRows(a, b) {
+  const A = parseInt(a, 2), B = parseInt(b, 2);
+  const res = (A + B).toString(2).padStart(Math.max(a.length, b.length), '0');
+  const W = res.length, ap = a.padStart(W, '0'), bp = b.padStart(W, '0');
+  const carry = Array(W).fill(' ');
+  let c = 0;
+  for (let i = W - 1; i >= 0; i--) {
+    c = (+ap[i] + +bp[i] + c) >> 1;
+    if (i > 0 && c) carry[i - 1] = '1';
+  }
+  return {
+    res,
+    rows: [
+      { lab: 'nhớ', tx: carry.join('') },
+      { tx: a.padStart(W), note: `(${A})` },
+      { lab: '+', tx: b.padStart(W), note: `(${B})` },
+      { tx: res, rule: true, note: `(${A + B})` },
+    ],
+  };
+}
+
+// ---------- Bộ sinh đề ----------
+const GEN = {
+  d2b(L) {
+    const base = L === 1 ? pick([2, 2, 8, 16]) : pick([2, 8, 16]);
+    const R = { 2: [[5, 31], [32, 255], [256, 1023]], 8: [[20, 200], [200, 999], [1000, 9999]], 16: [[20, 255], [256, 2000], [2000, 9999]] };
+    const n = span(L, R[base]);
+    const ans = toB(n, base);
+    let rows = '', x = n;
+    while (x > 0) {
+      const q = Math.floor(x / base), r = x % base;
+      rows += `<tr><td class="m">${x}</td><td>: ${base}</td><td class="m">${q}</td><td class="m">${r}${r > 9 ? ' (' + DIG[r] + ')' : ''}</td></tr>`;
+      x = q;
+    }
+    return {
+      q: `Đổi ${num(n, 10)} sang hệ ${base}`,
+      fields: [{ label: `Kết quả ở hệ ${base}`, kind: 'num', base, answer: ans }],
+      hint: `Chia liên tiếp cho ${base}, ghi lại số dư; dừng khi thương bằng 0; đọc các số dư từ dưới lên.`,
+      sol: `<table class="steps"><tr><th>Số</th><th>Chia</th><th>Thương</th><th>Dư</th></tr>${rows}</table>
+            <p>Đọc số dư <b>từ dưới lên</b> ⇒ ${num(n, 10)} = ${num(ans, base)}</p>`,
+    };
+  },
+
+  b2d(L) {
+    const base = L === 1 ? pick([2, 2, 8, 16]) : pick([2, 8, 16]);
+    const D = { 2: [[4, 5], [6, 8], [9, 11]], 8: [[2, 2], [3, 3], [4, 4]], 16: [[2, 2], [3, 3], [3, 4]] };
+    const s = randDigits(span(L, D[base]), base);
+    const n = parseInt(s, base);
+    const k = s.length;
+    const terms = [...s].map((c, i) => `${c}${c > '9' ? '(' + DIG.indexOf(c) + ')' : ''}×${base}<sup>${k - 1 - i}</sup>`);
+    const vals = [...s].map((c, i) => DIG.indexOf(c) * base ** (k - 1 - i));
+    return {
+      q: `Đổi ${num(s, base)} sang hệ 10`,
+      fields: [{ label: 'Kết quả ở hệ 10', kind: 'num', base: 10, answer: String(n) }],
+      hint: `Đánh vị trí từ phải sang trái bắt đầu từ 0; nhân mỗi ký số với ${base}^vị trí rồi cộng lại.`,
+      sol: `<p>${num(s, base)} = ${terms.join(' + ')}</p><p>= ${vals.join(' + ')} = <b>${n}</b></p>`,
+    };
+  },
+
+  quick(L) {
+    const dir = pick(['2>8', '2>16', '8>2', '16>2']);
+    const len = span(L, [[5, 7], [8, 10], [11, 16]]);
+    const bits = randBits(len);
+    if (dir.startsWith('2>')) {
+      const base = +dir.slice(2), g = base === 8 ? 3 : 4;
+      const padded = bits.padStart(Math.ceil(len / g) * g, '0');
+      const groups = padded.match(new RegExp(`.{${g}}`, 'g'));
+      const digits = groups.map(x => toB(parseInt(x, 2), base));
+      const ans = strip0(digits.join(''));
+      return {
+        q: `Đổi nhanh ${num(bits, 2)} sang hệ ${base}`,
+        fields: [{ label: `Kết quả ở hệ ${base}`, kind: 'num', base, answer: ans }],
+        hint: `Chia thành các nhóm ${g} bit tính từ phải sang trái (thiếu thì thêm 0 bên trái), đổi từng nhóm.`,
+        sol: `<table class="steps"><tr><th>Nhóm ${g} bit</th>${groups.map(x => `<td class="m">${x}</td>`).join('')}</tr>
+              <tr><th>Hệ ${base}</th>${digits.map(x => `<td class="m">${x}</td>`).join('')}</tr></table>
+              <p>⇒ ${num(bits, 2)} = ${num(ans, base)}</p>`,
+      };
+    }
+    const base = +dir.split('>')[0], g = base === 8 ? 3 : 4;
+    const s = toB(parseInt(bits, 2), base);
+    const groups = [...s].map(c => parseInt(c, base).toString(2).padStart(g, '0'));
+    const ans = strip0(groups.join(''));
+    return {
+      q: `Đổi nhanh ${num(s, base)} sang hệ 2`,
+      fields: [{ label: 'Kết quả ở hệ 2', kind: 'num', base: 2, answer: ans }],
+      hint: `Đổi mỗi ký số hệ ${base} thành đúng ${g} bit, rồi ghép lại.`,
+      sol: `<table class="steps"><tr><th>Hệ ${base}</th>${[...s].map(x => `<td class="m">${x}</td>`).join('')}</tr>
+            <tr><th>${g} bit</th>${groups.map(x => `<td class="m">${x}</td>`).join('')}</tr></table>
+            <p>⇒ ${num(s, base)} = ${num(ans, 2)}</p>`,
+    };
+  },
+
+  frac(L) {
+    const base = pick([2, 2, 8]);
+    const ip = base === 2 ? randBits(span(L, [[2, 3], [3, 4], [4, 5]])) : randDigits(span(L, [[1, 2], [2, 2], [2, 3]]), 8);
+    const fl = base === 2 ? span(L, [[2, 2], [2, 3], [3, 4]]) : span(L, [[1, 1], [1, 2], [2, 2]]);
+    let fp = '';
+    for (let i = 0; i < fl - 1; i++) fp += DIG[rint(0, base - 1)];
+    fp += DIG[rint(1, base - 1)];
+    const s = ip + '.' + fp;
+    const terms = [], vals = [];
+    [...ip].forEach((c, i) => { const p = ip.length - 1 - i; terms.push(`${c}×${base}<sup>${p}</sup>`); vals.push(+c * base ** p); });
+    [...fp].forEach((c, i) => { const p = -(i + 1); terms.push(`${c}×${base}<sup>${p}</sup>`); vals.push(+c * base ** p); });
+    const v = vals.reduce((x, y) => x + y, 0);
+    return {
+      q: `Đổi ${num(s, base)} sang hệ 10`,
+      fields: [{ label: 'Kết quả ở hệ 10 (dùng dấu chấm, vd 6.625)', kind: 'frac10', answer: v }],
+      hint: `Phần nguyên: lũy thừa 0, 1, 2… từ phải sang. Phần sau dấu chấm: lũy thừa −1, −2, −3… (${base}<sup>−1</sup> = ${1 / base}).`,
+      sol: `<p>${num(s, base)} = ${terms.join(' + ')}</p><p>= ${vals.join(' + ')} = <b>${v}</b></p>`,
+    };
+  },
+
+  add(L) {
+    const a = randBits(span(L, [[4, 5], [5, 7], [7, 10]])), b = randBits(span(L, [[3, 5], [5, 7], [6, 10]]));
+    const w = addRows(a, b);
+    return {
+      q: `Tính ${num(a, 2)} + ${num(b, 2)}`,
+      fields: [{ label: 'Tổng (hệ 2)', kind: 'num', base: 2, answer: strip0(w.res) }],
+      hint: '0+0=0 · 0+1=1 · 1+1=0 nhớ 1 · 1+1+1=1 nhớ 1. Cộng từ phải sang trái.',
+      sol: work(w.rows) + `<p>Kiểm tra bằng hệ 10: ${parseInt(a, 2)} + ${parseInt(b, 2)} = ${parseInt(w.res, 2)} ✓</p>`,
+    };
+  },
+
+  sub(L) {
+    const lenA = span(L, [[4, 5], [5, 7], [7, 10]]);
+    let a, b;
+    do { a = randBits(lenA); b = randBits(rint(Math.max(2, lenA - 2), lenA)); } while (parseInt(b, 2) >= parseInt(a, 2));
+    const A = parseInt(a, 2), B = parseInt(b, 2), W = a.length;
+    const res = (A - B).toString(2).padStart(W, '0'), bp = b.padStart(W, '0');
+    const mark = Array(W).fill(' ');
+    let br = 0;
+    for (let i = W - 1; i >= 0; i--) { const d = +a[i] - +bp[i] - br; if (d < 0) { mark[i] = '1'; br = 1; } else br = 0; }
+    return {
+      q: `Tính ${num(a, 2)} − ${num(b, 2)}`,
+      fields: [{ label: 'Hiệu (hệ 2)', kind: 'num', base: 2, answer: strip0(res) }],
+      hint: '0−0=0 · 1−0=1 · 1−1=0 · 0−1=1 và mượn 1 từ cột bên trái (cột đang trừ được cộng thêm 2).',
+      sol: work([
+        { lab: 'mượn', tx: mark.join('') },
+        { tx: a, note: `(${A})` },
+        { lab: '−', tx: b.padStart(W), note: `(${B})` },
+        { tx: res, rule: true, note: `(${A - B})` },
+      ]) + '<p class="small">Hàng "mượn": cột ghi 1 là cột phải mượn 1 từ cột bên trái.</p>',
+    };
+  },
+
+  comp(L) {
+    const R = [[4, 5], [5, 7], [7, 9]];
+    let a, b;
+    do { a = randBits(span(L, R)); b = randBits(span(L, R)); } while (a === b);
+    const A = parseInt(a, 2), B = parseInt(b, 2), n = Math.max(a.length, b.length);
+    const ap = a.padStart(n, '0'), bp = b.padStart(n, '0'), cb = invert(bp);
+    const s1 = addRows(ap, cb);
+    const hasCarry = s1.res.length > n;
+    let ans, tail;
+    if (hasCarry) {
+      const low = s1.res.slice(1);
+      const s2 = addRows(low, '1');
+      const r = s2.res.slice(-n).padStart(n, '0');
+      ans = strip0(r);
+      tail = `<p><b>Bước 3.</b> Có nhớ 1 ở bit cao nhất → bỏ nhớ, cộng thêm 1:</p>${work(s2.rows)}
+              <p>Kết quả: ${num(ans, 2)} &nbsp;(kiểm tra: ${A} − ${B} = ${A - B} ✓)</p>`;
+    } else {
+      const r = invert(s1.res);
+      ans = '-' + strip0(r);
+      tail = `<p><b>Bước 3.</b> Không có nhớ → lấy phần bù của tổng ${s1.res} là ${r}, thêm dấu âm.</p>
+              <p>Kết quả: <b>−${strip0(r)}</b><sub>2</sub> &nbsp;(kiểm tra: ${A} − ${B} = ${A - B} ✓)</p>`;
+    }
+    return {
+      q: `Dùng phương pháp trừ bù, tính ${num(a, 2)} − ${num(b, 2)}`,
+      fields: [{ label: 'Hiệu (hệ 2, kết quả âm thì gõ dấu − ở đầu)', kind: 'signed2', answer: ans }],
+      hint: 'Đệm 2 số cho cùng độ dài → đảo bit số trừ → cộng với số bị trừ → có nhớ 1 thì bỏ nhớ và cộng 1; không nhớ thì lấy bù của tổng và thêm dấu −.',
+      sol: `<p><b>Bước 1.</b> Đệm về ${n} bit: số bị trừ ${ap}, số trừ ${bp}. Phần bù của số trừ (đảo bit): <b>${cb}</b></p>
+            <p><b>Bước 2.</b> Cộng số bị trừ với phần bù:</p>${work(s1.rows)}${tail}`,
+    };
+  },
+
+  mul(L) {
+    const a = randBits(span(L, [[3, 4], [4, 5], [5, 6]])), b = randBits(span(L, [[2, 3], [3, 4], [4, 5]]));
+    const A = parseInt(a, 2), B = parseInt(b, 2), res = (A * B).toString(2), W = res.length + 1;
+    const rows = [{ tx: a.padStart(W), note: `(${A})` }, { lab: '×', tx: b.padStart(W), note: `(${B})` }];
+    [...b].reverse().forEach((c, i) => {
+      rows.push({ tx: ((c === '1' ? a : '0'.repeat(a.length)) + ' '.repeat(i)).padStart(W), rule: i === 0, note: `bit ${c} → ${c === '1' ? 'chép số bị nhân' : 'toàn 0'}, lùi ${i} cột` });
+    });
+    if (b.length > 1) rows.push({ tx: res.padStart(W), rule: true, note: `(${A * B})` });
+    return {
+      q: `Tính ${num(a, 2)} × ${num(b, 2)}`,
+      fields: [{ label: 'Tích (hệ 2)', kind: 'num', base: 2, answer: res }],
+      hint: 'Mỗi bit của số nhân (từ phải sang): bit 1 → chép số bị nhân, bit 0 → dòng toàn 0; mỗi dòng lùi sang trái 1 cột; cộng các dòng.',
+      sol: work(rows) + `<p>Kiểm tra: ${A} × ${B} = ${A * B} ✓</p>`,
+    };
+  },
+
+  div(L) {
+    const d = randBits(span(L, [[2, 2], [2, 3], [3, 3]]));
+    let N;
+    do { N = randBits(span(L, [[4, 5], [5, 7], [7, 8]])); } while (parseInt(N, 2) < parseInt(d, 2));
+    const Dv = parseInt(d, 2), Nv = parseInt(N, 2);
+    let rem = 0, qb = '', rows = '';
+    [...N].forEach((c, i) => {
+      const cur = rem * 2 + +c, ok = cur >= Dv;
+      qb += ok ? '1' : '0';
+      rem = ok ? cur - Dv : cur;
+      rows += `<tr><td>${i + 1}</td><td class="m">hạ ${c}</td><td class="m">${cur.toString(2)}</td><td>${ok ? '≥' : '<'} ${d}</td><td class="m"><b>${ok ? 1 : 0}</b></td><td class="m">${ok ? cur.toString(2) + ' − ' + d + ' = ' : ''}${rem.toString(2)}</td></tr>`;
+    });
+    const Q = strip0(qb), Rm = rem.toString(2);
+    return {
+      q: `Tính ${num(N, 2)} : ${num(d, 2)} (tìm thương và số dư)`,
+      fields: [{ label: 'Thương (hệ 2)', kind: 'num', base: 2, answer: Q }, { label: 'Số dư (hệ 2)', kind: 'num', base: 2, answer: Rm }],
+      hint: 'Xét từ trái số bị chia: trừ được số chia thì ghi 1 vào thương và trừ; không thì ghi 0. Hạ bit kế tiếp, lặp lại tới hết.',
+      sol: `<table class="steps"><tr><th>#</th><th>Hạ bit</th><th>Đang xét</th><th>So với số chia</th><th>Thương</th><th>Còn lại</th></tr>${rows}</table>
+            <p>Thương = ${qb} = ${num(Q, 2)}, số dư = ${num(Rm, 2)} &nbsp;(kiểm tra: ${Nv} : ${Dv} = ${Math.floor(Nv / Dv)} dư ${Nv % Dv} ✓)</p>`,
+    };
+  },
+};
+
+// ---------- Trạng thái & lưu trữ ----------
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+};
+const prefs = store.get('nmth-ch2-prefs', { types: TYPES.map(t => t.id), level: 1 });
+let selected = new Set(prefs.types.filter(id => GEN[id]));
+if (!selected.size) selected = new Set(TYPES.map(t => t.id));
+let level = LEVELS[prefs.level] ? prefs.level : 1;
+let stats = store.get('nmth-ch2-stats', { total: 0, correct: 0, streak: 0, best: 0, by: {} });
+let cur = null, curType = null, recorded = false, solved = false;
+
+function savePrefs() { store.set('nmth-ch2-prefs', { types: [...selected], level }); }
+
+function record(ok) {
+  stats.total++;
+  const t = (stats.by[curType] ||= { t: 0, c: 0 });
+  t.t++;
+  if (ok) { stats.correct++; t.c++; stats.streak++; stats.best = Math.max(stats.best, stats.streak); } else stats.streak = 0;
+  store.set('nmth-ch2-stats', stats);
+  renderStats();
+}
+
+function renderStats() {
+  $('#sC').textContent = stats.correct;
+  $('#sT').textContent = stats.total;
+  $('#sP').textContent = stats.total ? Math.round(stats.correct / stats.total * 100) + '%' : '–';
+  $('#sS').textContent = stats.streak;
+  $('#sB').textContent = stats.best;
+  $('#byType').innerHTML = '<tr><th>Dạng</th><th>Đúng</th><th>Đã làm</th></tr>' + TYPES.map(t => {
+    const s = stats.by[t.id] || { t: 0, c: 0 };
+    return `<tr><td>${t.name}</td><td>${s.c}</td><td>${s.t}</td></tr>`;
+  }).join('');
+}
+
+function renderControls() {
+  $('#types').innerHTML = TYPES.map(t => `<button class="chip" data-t="${t.id}" aria-pressed="${selected.has(t.id)}">${t.name}</button>`).join('') +
+    '<button class="chip ghost" data-t="*">Chọn tất cả</button>';
+  $('#levels').innerHTML = Object.entries(LEVELS).map(([k, v]) => `<button class="chip" data-l="${k}" aria-pressed="${+k === level}">${v}</button>`).join('');
+}
+
+$('#types').addEventListener('click', e => {
+  const id = e.target.dataset.t;
+  if (!id) return;
+  if (id === '*') selected = new Set(TYPES.map(t => t.id));
+  else if (selected.has(id) && selected.size > 1) selected.delete(id);
+  else selected.add(id);
+  savePrefs(); renderControls();
+  if (!selected.has(curType)) next();
+});
+$('#levels').addEventListener('click', e => {
+  const l = +e.target.dataset.l;
+  if (!l) return;
+  level = l; savePrefs(); renderControls(); next();
+});
+
+// ---------- Câu hỏi ----------
+function next() {
+  const ids = [...selected];
+  curType = ids.length > 1 ? pick(ids.filter(x => x !== curType)) : ids[0];
+  cur = GEN[curType](level);
+  recorded = false; solved = false;
+  $('#tag').textContent = TYPES.find(t => t.id === curType).name + ' · ' + LEVELS[level];
+  $('#q').innerHTML = cur.q;
+  $('#fields').innerHTML = cur.fields.map((f, i) => {
+    const mode = f.kind === 'frac10' ? 'decimal' : (f.kind === 'num' && f.base <= 10 ? 'numeric' : 'text');
+    return `<label class="field"><span>${f.label}</span><input data-i="${i}" autocomplete="off" autocapitalize="characters" spellcheck="false" inputmode="${mode}"></label>`;
+  }).join('');
+  $('#fb').className = 'fb';
+  $('#sol').className = 'sol';
+  $('#sol').innerHTML = '';
+  $('#fields input').focus();
+}
+
+function norm(raw, f) {
+  let s = raw.trim().replace(/[\s_]/g, '').replace(/[−–]/g, '-');
+  if (!s) return { err: 'Bạn chưa nhập đáp án.' };
+  if (f.kind === 'frac10') {
+    s = s.replace(',', '.');
+    return /^-?\d+(\.\d+)?$/.test(s) ? { val: Number(s) } : { err: 'Nhập số thập phân, ví dụ 6.625' };
+  }
+  let neg = false;
+  if (f.kind === 'signed2') { if (s[0] === '-') { neg = true; s = s.slice(1); } else if (s[0] === '+') s = s.slice(1); }
+  const base = f.kind === 'signed2' ? 2 : f.base;
+  s = s.toUpperCase();
+  const ok = DIG.slice(0, base);
+  if (!s || [...s].some(c => !ok.includes(c))) return { err: `Hệ ${base} chỉ dùng ký số ${base === 16 ? '0–9 và A–F' : '0–' + (base - 1)}.` };
+  s = strip0(s);
+  return { val: (neg && s !== '0' ? '-' : '') + s };
+}
+
+function feedback(cls, html) { const fb = $('#fb'); fb.className = 'fb show ' + cls; fb.innerHTML = html; }
+
+function showAnswer(prefix) {
+  const ans = cur.fields.map(f => {
+    const v = f.kind === 'frac10' ? `<b>${f.answer}</b>` : f.kind === 'signed2' ? `<b class="num">${f.answer.replace('-', '−')}</b><sub>2</sub>` : num(f.answer, f.base);
+    return `${f.label.split(' (')[0]}: ${v}`;
+  }).join(' · ');
+  $('#sol').innerHTML = `<h3>${prefix}</h3><p>Đáp án: ${ans}</p>${cur.sol}`;
+  $('#sol').className = 'sol show';
+}
+
+function check() {
+  if (solved) return next();
+  const inputs = [...document.querySelectorAll('#fields input')];
+  let allOk = true, err = '';
+  inputs.forEach((inp, i) => {
+    const f = cur.fields[i], r = norm(inp.value, f);
+    inp.classList.remove('ok', 'bad');
+    if (r.err) { err ||= r.err; allOk = false; inp.classList.add('bad'); return; }
+    const good = f.kind === 'frac10' ? Math.abs(r.val - f.answer) < 1e-9 : r.val === f.answer;
+    inp.classList.add(good ? 'ok' : 'bad');
+    if (!good) allOk = false;
+  });
+  if (err) return feedback('bad', err);
+  if (!recorded) { record(allOk); recorded = true; }
+  if (allOk) {
+    solved = true;
+    feedback('ok', 'Chính xác! Nhấn Enter hoặc "Câu mới" để làm tiếp.');
+    showAnswer('Lời giải');
+  } else {
+    feedback('bad', 'Chưa đúng. Thử lại, bấm "Gợi ý" hoặc "Xem lời giải".');
+  }
+}
+
+$('#btnCheck').onclick = check;
+$('#btnNext').onclick = next;
+$('#btnHint').onclick = () => feedback('hint', '💡 ' + cur.hint);
+$('#btnSol').onclick = () => {
+  if (!recorded) { record(false); recorded = true; }
+  solved = true;
+  feedback('bad', 'Đã xem lời giải — câu này tính là sai. Đọc kỹ rồi làm câu mới nhé.');
+  showAnswer('Lời giải chi tiết');
+};
+$('#btnReset').onclick = () => {
+  if (!confirm('Xoá toàn bộ thống kê?')) return;
+  stats = { total: 0, correct: 0, streak: 0, best: 0, by: {} };
+  store.set('nmth-ch2-stats', stats); renderStats();
+};
+$('#fields').addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
+  e.preventDefault();
+  const inputs = [...document.querySelectorAll('#fields input')], i = inputs.indexOf(e.target);
+  if (!solved && i < inputs.length - 1 && !inputs[i + 1].value) inputs[i + 1].focus();
+  else check();
+});
+document.addEventListener('keydown', e => { if (e.key === 'Enter' && solved && e.target.tagName !== 'INPUT' && e.target.tagName !== 'BUTTON') next(); });
+
+$('#refTable').innerHTML = '<tr><th>10</th><th>16</th><th>2</th><th>8</th></tr>' +
+  Array.from({ length: 16 }, (_, n) => `<tr><td>${n}</td><td>${toB(n, 16)}</td><td>${n.toString(2).padStart(4, '0')}</td><td>${n.toString(8)}</td></tr>`).join('');
+
+renderControls();
+renderStats();
+next();
+
+// Cho phép kiểm thử bộ sinh đề ngoài trình duyệt
+window.__GEN = GEN;
+</script>
+</body>
+</html>
