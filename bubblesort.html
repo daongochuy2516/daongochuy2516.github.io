@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bubble Sort trực quan</title>
+<style>
+  :root{
+    --bg:#1e2029; --panel:#282a36; --panel2:#2f3242; --text:#e8e8f0; --muted:#8a8fa8;
+    --bar:#6c7bd9; --cmp:#ffc83d; --swap:#ff5c8a; --ok:#3ddc84; --line:#3b3f55;
+    --k:#ff79c6; --f:#50fa7b; --p:#ffb86c; --nu:#bd93f9; --c:#6272a4;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 "Segoe UI",system-ui,sans-serif}
+  .wrap{max-width:1200px;margin:0 auto;padding:20px 16px 40px}
+  h1{margin:0 0 4px;font-size:24px}
+  .sub{color:var(--muted);margin:0 0 18px}
+  .grid{display:grid;grid-template-columns:1.35fr 1fr;gap:16px}
+  @media (max-width:900px){.grid{grid-template-columns:1fr}}
+  .card{background:var(--panel);border-radius:12px;padding:16px;box-shadow:0 6px 24px #0005}
+  .card h2{margin:0 0 10px;font-size:14px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+
+  /* Bars */
+  .stage{position:relative;height:300px;margin-top:6px}
+  .bars{position:absolute;left:0;right:0;top:0;bottom:46px}
+  .bar{position:absolute;bottom:0;padding:0 3px;transition:left .35s ease, height .35s ease}
+  .bar .fill{height:100%;border-radius:6px 6px 2px 2px;background:var(--bar);transition:background .2s, transform .2s, box-shadow .2s}
+  .bar .val{position:absolute;top:-22px;left:0;right:0;text-align:center;font-weight:600;font-size:13px}
+  .bar.cmp .fill{background:var(--cmp);box-shadow:0 0 14px #ffc83d88}
+  .bar.swap .fill{background:var(--swap);box-shadow:0 0 16px #ff5c8aaa;transform:scaleY(1.04)}
+  .bar.ok .fill{background:var(--ok)}
+  .bar.dim{opacity:.85}
+  .idx{position:absolute;bottom:24px;left:0;right:0;height:18px}
+  .idx span{position:absolute;text-align:center;font-size:12px;color:var(--muted)}
+  .ptrs{position:absolute;bottom:0;left:0;right:0;height:22px}
+  .ptr{position:absolute;text-align:center;font:600 12px Consolas,monospace;transition:left .3s ease;color:var(--cmp)}
+  .ptr::before{content:"▲";display:block;line-height:8px;font-size:9px}
+  .ptr.hide{opacity:0}
+  .boundary{position:absolute;top:0;bottom:46px;border-left:2px dashed var(--ok);transition:left .3s ease}
+  .boundary span{position:absolute;top:-2px;left:6px;font-size:11px;color:var(--ok);white-space:nowrap}
+
+  .legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;font-size:13px;color:var(--muted)}
+  .legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+
+  /* Explanation */
+  .msg{margin-top:14px;background:var(--panel2);border-left:4px solid var(--cmp);border-radius:8px;padding:12px 14px;min-height:72px;font-size:15px}
+  .msg b{color:var(--cmp)}
+  .msg .hl-ok{color:var(--ok);font-weight:600}
+  .msg .hl-sw{color:var(--swap);font-weight:600}
+
+  /* Controls */
+  .controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:14px}
+  button{background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px 14px;font:inherit;cursor:pointer}
+  button:hover{border-color:var(--bar)}
+  button.primary{background:var(--bar);border-color:var(--bar);color:#fff;font-weight:600;min-width:96px}
+  button:disabled{opacity:.4;cursor:default}
+  label{color:var(--muted);font-size:13px;display:flex;align-items:center;gap:6px}
+  input[type=range]{accent-color:var(--bar)}
+  input[type=text]{background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:8px 10px;font:14px Consolas,monospace;flex:1;min-width:160px}
+  .timeline{display:flex;align-items:center;gap:10px;margin-top:12px;color:var(--muted);font-size:13px}
+  .timeline input{flex:1}
+
+  /* Code */
+  pre.code{margin:0;font:14px/1.75 Consolas,"Fira Code",monospace;overflow-x:auto;background:#262834;border-radius:8px;padding:10px 0}
+  .ln{display:block;padding:0 12px 0 0;white-space:pre;border-left:3px solid transparent;transition:background .15s}
+  .ln .no{display:inline-block;width:34px;text-align:right;margin-right:16px;color:#5d6380;user-select:none}
+  .ln.active{background:#ffc83d22;border-left-color:var(--cmp)}
+  .ln.active .no{color:var(--cmp)}
+  .k{color:var(--k)} .f{color:var(--f)} .p{color:var(--p);font-style:italic} .nu{color:var(--nu)} .c{color:var(--c)}
+
+  /* Vars */
+  .vars{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
+  .var{background:var(--panel2);border-radius:8px;padding:8px 10px}
+  .var .n{font:12px Consolas,monospace;color:var(--muted)}
+  .var .v{font:600 18px Consolas,monospace}
+  .var.flash .v{color:var(--cmp)}
+  .note{margin-top:14px;font-size:13.5px;color:var(--muted)}
+  .note b{color:var(--text)}
+  kbd{background:var(--panel2);border:1px solid var(--line);border-radius:4px;padding:0 5px;font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🫧 Bubble Sort — minh hoạ từng bước</h1>
+  <p class="sub">Mỗi lượt, các cặp phần tử kề nhau được so sánh; số lớn hơn bị đẩy dần về cuối như bong bóng nổi lên. Nếu một lượt không có hoán đổi nào → mảng đã xong, dừng sớm.</p>
+
+  <div class="grid">
+    <!-- LEFT: visualization -->
+    <div class="card">
+      <h2>Mảng arr[]</h2>
+      <div class="stage" id="stage">
+        <div class="bars" id="bars"></div>
+        <div class="boundary" id="boundary"><span>đã sắp xếp →</span></div>
+        <div class="idx" id="idx"></div>
+        <div class="ptrs">
+          <div class="ptr" id="pj">j</div>
+          <div class="ptr" id="pj1">j+1</div>
+        </div>
+      </div>
+      <div class="legend">
+        <span><i style="background:var(--bar)"></i>Chưa sắp xếp</span>
+        <span><i style="background:var(--cmp)"></i>Đang so sánh arr[j], arr[j+1]</span>
+        <span><i style="background:var(--swap)"></i>Hoán đổi</span>
+        <span><i style="background:var(--ok)"></i>Đã đúng vị trí</span>
+      </div>
+
+      <div class="msg" id="msg"></div>
+
+      <div class="controls">
+        <button id="bReset" title="Về đầu">⏮</button>
+        <button id="bPrev" title="Lùi 1 bước (←)">◀ Lùi</button>
+        <button id="bPlay" class="primary" title="Chạy / Dừng (Space)">▶ Chạy</button>
+        <button id="bNext" title="Tiến 1 bước (→)">Tiến ▶</button>
+        <button id="bEnd" title="Tới cuối">⏭</button>
+        <label>Tốc độ <input type="range" id="speed" min="0" max="100" value="55"></label>
+      </div>
+      <div class="timeline">
+        <span id="stepLbl">Bước 0/0</span>
+        <input type="range" id="scrub" min="0" max="0" value="0">
+      </div>
+      <div class="controls">
+        <button id="pRandom">🎲 Ngẫu nhiên</button>
+        <button id="pNearly">Gần như đã sắp xếp</button>
+        <button id="pReverse">Ngược hoàn toàn</button>
+        <input type="text" id="custom" placeholder="Tự nhập: 5 1 4 2 8">
+        <button id="bApply">Áp dụng</button>
+      </div>
+    </div>
+
+    <!-- RIGHT: code + vars -->
+    <div class="card">
+      <h2>Code đang chạy</h2>
+<pre class="code" id="code"><span class="ln" data-l="1"><span class="no">1</span><span class="k">void</span> <span class="f">bubbleSort</span>(<span class="k">int</span> <span class="p">arr</span>[], <span class="k">int</span> <span class="p">n</span>) {</span><span class="ln" data-l="2"><span class="no">2</span>    <span class="k">for</span> (<span class="k">int</span> i = <span class="nu">0</span>; i &lt; <span class="p">n</span> - <span class="nu">1</span>; i++) {</span><span class="ln" data-l="3"><span class="no">3</span>        <span class="k">int</span> swapped = <span class="nu">0</span>; <span class="c">// Co kiem tra co hoan doi khong</span></span><span class="ln" data-l="4"><span class="no">4</span>        <span class="k">for</span> (<span class="k">int</span> j = <span class="nu">0</span>; j &lt; <span class="p">n</span> - <span class="nu">1</span> - i; j++) {</span><span class="ln" data-l="5"><span class="no">5</span>            <span class="k">if</span> (<span class="p">arr</span>[j] &gt; <span class="p">arr</span>[j + <span class="nu">1</span>]) {</span><span class="ln" data-l="6"><span class="no">6</span>                <span class="f">swap</span>(&amp;<span class="p">arr</span>[j], &amp;<span class="p">arr</span>[j + <span class="nu">1</span>]);</span><span class="ln" data-l="7"><span class="no">7</span>                swapped = <span class="nu">1</span>;</span><span class="ln" data-l="8"><span class="no">8</span>            }</span><span class="ln" data-l="9"><span class="no">9</span>        }</span><span class="ln" data-l="10"><span class="no">10</span>        <span class="c">// Neu khong co hoan doi nao -&gt; mang da sap xep xong</span></span><span class="ln" data-l="11"><span class="no">11</span>        <span class="k">if</span> (!swapped) <span class="k">break</span>;</span><span class="ln" data-l="12"><span class="no">12</span>    }</span><span class="ln" data-l="13"><span class="no">13</span>}</span></pre>
+
+      <div class="vars">
+        <div class="var" id="v-n"><div class="n">n</div><div class="v">–</div></div>
+        <div class="var" id="v-i"><div class="n">i (lượt)</div><div class="v">–</div></div>
+        <div class="var" id="v-j"><div class="n">j</div><div class="v">–</div></div>
+        <div class="var" id="v-sw"><div class="n">swapped</div><div class="v">–</div></div>
+        <div class="var" id="v-cmp"><div class="n">số lần so sánh</div><div class="v">0</div></div>
+        <div class="var" id="v-swp"><div class="n">số lần hoán đổi</div><div class="v">0</div></div>
+      </div>
+
+      <div class="note">
+        <p>💡 <b>Vì sao <code>j &lt; n - 1 - i</code>?</b> Sau lượt thứ <code>i</code>, đã có <code>i+1</code> phần tử lớn nhất nằm đúng chỗ ở cuối mảng (vùng xanh), nên không cần so sánh lại.</p>
+        <p>💡 <b>Biến <code>swapped</code></b> là tối ưu "dừng sớm": thử bộ <i>Gần như đã sắp xếp</i> để thấy thuật toán dừng sau ít lượt.</p>
+        <p>Độ phức tạp: tốt nhất <b>O(n)</b> (mảng đã sắp xếp), xấu nhất <b>O(n²)</b> (mảng ngược).</p>
+        <p>Phím tắt: <kbd>Space</kbd> chạy/dừng, <kbd>←</kbd> <kbd>→</kbd> lùi/tiến.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+let steps = [], cur = 0, timer = null, n = 0, barEls = [];
+
+/* ---------- Ghi lại toàn bộ các bước của thuật toán ---------- */
+function buildSteps(input){
+  const a = input.map((v,k)=>({v,id:k}));
+  n = a.length;
+  const out = [];
+  let i = null, j = null, swapped = null, comps = 0, swaps = 0, sortedFrom = n;
+  const push = o => out.push({arr:a.map(x=>({...x})), i, j, swapped, comps, swaps, sortedFrom, cmp:null, swp:null, ...o});
+
+  push({line:1, msg:`Gọi <b>bubbleSort</b> với mảng ${n} phần tử: [${a.map(x=>x.v).join(', ')}].`});
+  let early = false;
+  for (i = 0; i < n - 1; i++) {
+    j = null; swapped = null;
+    push({line:2, msg:`<b>Lượt ${i+1}</b> (i = ${i} &lt; n-1 = ${n-1}). Mục tiêu: đưa số lớn nhất trong đoạn arr[0..${n-1-i}] về vị trí <b>${n-1-i}</b>.`});
+    swapped = 0;
+    push({line:3, msg:`Đặt <b>swapped = 0</b> — chưa có hoán đổi nào trong lượt này.`});
+    for (j = 0; j < n - 1 - i; j++) {
+      push({line:4, cmp:[j,j+1], msg:`j = ${j} &lt; ${n-1-i} → xét cặp <b>arr[${j}]</b> và <b>arr[${j+1}]</b>.`});
+      comps++;
+      const x = a[j].v, y = a[j+1].v;
+      if (x > y) {
+        push({line:5, cmp:[j,j+1], msg:`${x} &gt; ${y}? <span class="hl-sw">Đúng</span> → số lớn đang đứng trước, cần đổi chỗ.`});
+        [a[j], a[j+1]] = [a[j+1], a[j]]; swaps++;
+        push({line:6, swp:[j,j+1], msg:`<span class="hl-sw">swap</span>: ${x} ⇄ ${y}. Số ${x} "nổi" lên một bậc.`});
+        swapped = 1;
+        push({line:7, swp:[j,j+1], msg:`Đặt <b>swapped = 1</b> — lượt này đã có hoán đổi.`});
+      } else {
+        push({line:5, cmp:[j,j+1], msg:`${x} &gt; ${y}? <span class="hl-ok">Sai</span> → đã đúng thứ tự, giữ nguyên.`});
+      }
+    }
+    sortedFrom = n - 1 - i;
+    push({line:9, msg:`j = ${j} không còn &lt; ${n-1-i} → hết lượt ${i+1}. Số <span class="hl-ok">${a[n-1-i].v}</span> đã đứng đúng vị trí ${n-1-i}.`});
+    if (!swapped) {
+      sortedFrom = 0;
+      push({line:11, msg:`swapped = 0 → <span class="hl-ok">không có hoán đổi nào</span>, nghĩa là mọi cặp kề nhau đều đúng thứ tự → <b>break</b>, dừng sớm!`});
+      early = true; break;
+    }
+    push({line:11, msg:`swapped = 1 → vẫn còn hoán đổi, có thể chưa xong → sang lượt tiếp theo.`});
+  }
+  if (!early) {
+    j = null; sortedFrom = 0;
+    push({line:2, msg:`i = ${i} không còn &lt; ${n-1} → thoát vòng lặp ngoài. Phần tử đầu tiên tự động đúng chỗ.`});
+  }
+  push({line:13, sortedFrom:0, done:true,
+    msg:`🎉 <span class="hl-ok">Hoàn tất!</span> Mảng: [${a.map(x=>x.v).join(', ')}] — ${comps} lần so sánh, ${swaps} lần hoán đổi${early?`, dừng sớm sau ${i+1} lượt`:''}.`});
+  return out;
+}
+
+/* ---------- Vẽ ---------- */
+function setup(values){
+  stop();
+  steps = buildSteps(values); cur = 0;
+  const bars = $('bars'); bars.innerHTML = ''; barEls = [];
+  const max = Math.max(...values);
+  values.forEach((v,k)=>{
+    const d = document.createElement('div'); d.className = 'bar';
+    d.innerHTML = `<div class="val">${v}</div><div class="fill"></div>`;
+    d.style.width = (100/n)+'%';
+    d.style.height = (8 + 82 * v / max)+'%';
+    bars.appendChild(d); barEls[k] = d;
+  });
+  $('idx').innerHTML = values.map((_,k)=>`<span style="left:${k*100/n}%;width:${100/n}%">[${k}]</span>`).join('');
+  $('pj').style.width = $('pj1').style.width = (100/n)+'%';
+  $('scrub').max = steps.length - 1;
+  render();
+}
+
+function setVar(id, val){
+  const el = $(id), v = el.querySelector('.v'), s = (val===null||val===undefined) ? '–' : String(val);
+  if (v.textContent !== s) { el.classList.add('flash'); setTimeout(()=>el.classList.remove('flash'), 350); }
+  v.textContent = s;
+}
+
+function render(){
+  const s = steps[cur], w = 100/n;
+  s.arr.forEach((o,idx)=>{
+    const el = barEls[o.id];
+    el.style.left = (idx*w)+'%';
+    el.className = 'bar';
+    if (idx >= s.sortedFrom) el.classList.add('ok');
+    if (s.cmp && s.cmp.includes(idx)) el.classList.add('cmp');
+    if (s.swp && s.swp.includes(idx)) el.classList.add('swap');
+  });
+  // pointers j, j+1
+  const showP = s.j !== null && s.j !== undefined && s.j < n - 1 - (s.i ?? 0);
+  $('pj').classList.toggle('hide', !showP); $('pj1').classList.toggle('hide', !showP);
+  if (showP){ $('pj').style.left = (s.j*w)+'%'; $('pj1').style.left = ((s.j+1)*w)+'%'; }
+  // boundary
+  const b = $('boundary');
+  b.style.display = (s.sortedFrom < n && s.sortedFrom > 0) ? 'block' : 'none';
+  b.style.left = (s.sortedFrom*w)+'%';
+  // code line
+  document.querySelectorAll('.ln').forEach(l=>l.classList.toggle('active', +l.dataset.l === s.line));
+  // vars
+  setVar('v-n', n); setVar('v-i', s.i); setVar('v-j', s.j); setVar('v-sw', s.swapped);
+  setVar('v-cmp', s.comps); setVar('v-swp', s.swaps);
+  $('msg').innerHTML = s.msg;
+  $('msg').style.borderLeftColor = s.done ? 'var(--ok)' : s.swp ? 'var(--swap)' : 'var(--cmp)';
+  $('stepLbl').textContent = `Bước ${cur+1}/${steps.length}`;
+  $('scrub').value = cur;
+  $('bPrev').disabled = $('bReset').disabled = cur === 0;
+  $('bNext').disabled = $('bEnd').disabled = cur === steps.length - 1;
+}
+
+/* ---------- Điều khiển ---------- */
+const delay = () => 1400 - 13.5 * +$('speed').value; // 1400ms .. 50ms
+function go(k){ cur = Math.max(0, Math.min(steps.length-1, k)); render(); }
+function tick(){ if (cur >= steps.length-1) return stop(); go(cur+1); timer = setTimeout(tick, delay()); }
+function play(){ if (cur >= steps.length-1) go(0); $('bPlay').textContent = '⏸ Dừng'; timer = setTimeout(tick, 150); }
+function stop(){ clearTimeout(timer); timer = null; $('bPlay').textContent = '▶ Chạy'; }
+const toggle = () => timer ? stop() : play();
+
+$('bPlay').onclick = toggle;
+$('bNext').onclick = () => { stop(); go(cur+1); };
+$('bPrev').onclick = () => { stop(); go(cur-1); };
+$('bReset').onclick = () => { stop(); go(0); };
+$('bEnd').onclick = () => { stop(); go(steps.length-1); };
+$('scrub').oninput = e => { stop(); go(+e.target.value); };
+
+const rnd = (len) => Array.from({length:len}, ()=> 5 + Math.floor(Math.random()*95));
+$('pRandom').onclick = () => setup(rnd(8));
+$('pNearly').onclick = () => setup([12, 25, 31, 18, 44, 52, 67, 80]);
+$('pReverse').onclick = () => setup([90, 78, 66, 54, 42, 30, 18, 7]);
+$('bApply').onclick = () => {
+  const vals = $('custom').value.split(/[\s,;]+/).filter(Boolean).map(Number).filter(x=>Number.isFinite(x) && x>0).slice(0,16).map(Math.round);
+  if (vals.length < 2) { alert('Nhập ít nhất 2 số dương, cách nhau bởi dấu cách hoặc dấu phẩy (tối đa 16 số).'); return; }
+  setup(vals);
+};
+$('custom').addEventListener('keydown', e => { if (e.key === 'Enter') $('bApply').click(); });
+
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' && e.target.type === 'text') return;
+  if (e.code === 'Space') { e.preventDefault(); toggle(); }
+  else if (e.key === 'ArrowRight') { stop(); go(cur+1); }
+  else if (e.key === 'ArrowLeft') { stop(); go(cur-1); }
+});
+
+setup([64, 34, 25, 12, 22, 11, 90, 5]);
+</script>
+</body>
+</html>
