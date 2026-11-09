@@ -1,0 +1,927 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;font-size:14px}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Phòng Lab Nhị Phân</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600&family=JetBrains+Mono:wght@400;600&family=Lexend:wght@500;700&display=swap">
+<style>
+/* Layout: register-panel hero, sticky tab rail grouped "Ôn lại / Học cấp tốc / Luyện tập", each lab = theory column + live instrument */
+:root{
+  --bg:#EEF3F1; --panel:#FFFFFF; --ink:#12201D; --muted:#566965; --line:#D3DDD9; --cell:#E4EBE8;
+  --led:#C76A00; --led-soft:#FBE7C8; --teal:#0E7368; --teal-soft:#D3EDE8;
+  --good:#15703A; --good-soft:#DAF1E2; --bad:#B42318; --bad-soft:#FBE2DE;
+  --g-ai:#0E7368; --g-ai-soft:#D3EDE8; --g-jr:#B45A00; --g-jr-soft:#FBE4C9; --g-sz:#5B3FA8; --g-sz-soft:#E7E0F7; --g-dg:#3E4F4B; --g-dg-soft:#E2E8E6;
+  --f-display:"Lexend","Be Vietnam Pro",system-ui,sans-serif;
+  --f-body:"Be Vietnam Pro",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,"Cascadia Mono",Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0C1312; --panel:#131D1B; --ink:#DCE7E4; --muted:#93A6A2; --line:#24312E; --cell:#1B2725;
+  --led:#FFB23F; --led-soft:#3A2A10; --teal:#4FD1C0; --teal-soft:#113430;
+  --good:#6EE29A; --good-soft:#12301E; --bad:#FF8C7C; --bad-soft:#3A1814;
+  --g-ai:#4FD1C0; --g-ai-soft:#113430; --g-jr:#FFB23F; --g-jr-soft:#3A2A10; --g-sz:#B9A4FF; --g-sz-soft:#261E42; --g-dg:#B7C6C2; --g-dg-soft:#22302D;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0C1312; --panel:#131D1B; --ink:#DCE7E4; --muted:#93A6A2; --line:#24312E; --cell:#1B2725;
+  --led:#FFB23F; --led-soft:#3A2A10; --teal:#4FD1C0; --teal-soft:#113430;
+  --good:#6EE29A; --good-soft:#12301E; --bad:#FF8C7C; --bad-soft:#3A1814;
+  --g-ai:#4FD1C0; --g-ai-soft:#113430; --g-jr:#FFB23F; --g-jr-soft:#3A2A10; --g-sz:#B9A4FF; --g-sz-soft:#261E42; --g-dg:#B7C6C2; --g-dg-soft:#22302D;
+  color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.6}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.wrap{max-width:1140px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;line-height:1.2;margin:0}
+code,.mono{font-family:var(--f-mono)}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+
+/* hero */
+.hero{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:32px;align-items:center;padding-block:36px 28px}
+.eyebrow{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--teal);font-weight:600}
+.hero h1{font-size:clamp(30px,5vw,46px);font-weight:700;margin-top:6px}
+.hero p{color:var(--muted);max-width:52ch;margin:10px 0 0}
+.reg{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px;min-width:0}
+.reg-title{font-size:12px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;font-weight:600;display:flex;justify-content:space-between;gap:12px}
+.reg-bits{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:6px;margin-top:10px}
+.reg-bits .w{font-family:var(--f-mono);font-size:11px;color:var(--muted);text-align:center}
+.bitbtn{aspect-ratio:1/1.15;max-width:100%;width:44px;border-radius:8px;border:1px solid var(--line);background:var(--cell);font-family:var(--f-mono);font-size:20px;font-weight:600;cursor:pointer;color:var(--muted);transition:background .15s,color .15s,box-shadow .15s}
+.bitbtn.on{background:var(--led-soft);color:var(--led);border-color:var(--led);box-shadow:0 0 0 3px color-mix(in srgb,var(--led) 18%,transparent)}
+.nib-split{grid-column:span 4;border-top:2px solid var(--line);text-align:center;font-family:var(--f-mono);font-size:12px;color:var(--muted);padding-top:2px}
+.reg-out{display:grid;grid-template-columns:repeat(3,auto);gap:4px 18px;margin-top:12px;font-family:var(--f-mono);font-size:14px}
+.reg-out span{color:var(--muted);font-family:var(--f-body);font-size:12px;display:block}
+.reg-out b{font-size:18px}
+
+/* nav */
+.tabs{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
+.tabs-in{display:flex;gap:18px;overflow-x:auto;padding-block:8px;scrollbar-width:thin}
+.tgroup{display:flex;align-items:center;gap:4px;flex-shrink:0}
+.tgroup>span{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:600;margin-right:4px;white-space:nowrap}
+.tab{border:1px solid transparent;background:none;padding:6px 12px;border-radius:999px;cursor:pointer;white-space:nowrap;font-weight:500;font-size:14px;color:var(--muted);text-decoration:none}
+.tab:hover{color:var(--ink);background:var(--cell)}
+.tab[aria-current="page"]{background:var(--ink);color:var(--bg)}
+
+/* panels */
+main{padding-block:28px 64px}
+.panel h2{font-size:26px;font-weight:700}
+.panel .sub{color:var(--muted);margin:6px 0 20px;max-width:70ch}
+.cols{display:grid;grid-template-columns:minmax(0,340px) minmax(0,1fr);gap:24px;align-items:start}
+.theory{display:flex;flex-direction:column;gap:14px;min-width:0}
+.theory h3{font-size:15px;font-weight:600}
+.theory p,.theory ol,.theory ul{margin:0}
+.theory ol,.theory ul{padding-left:20px}
+.box{border-radius:10px;padding:12px 14px;background:var(--panel);border:1px solid var(--line)}
+.box.key{background:var(--led-soft);border-color:transparent}
+.box.key .lbl{color:var(--led)}
+.box.warn{background:var(--bad-soft);border-color:transparent}
+.box.warn .lbl{color:var(--bad)}
+.box.tip{background:var(--teal-soft);border-color:transparent}
+.box.tip .lbl{color:var(--teal)}
+.lbl{font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;display:block;margin-bottom:4px}
+.tool{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:16px;min-width:0}
+.inputs{display:flex;flex-wrap:wrap;gap:10px;align-items:end}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.field label{font-size:12px;color:var(--muted);font-weight:500}
+input[type=text],select,textarea{font-family:var(--f-mono);font-size:16px;padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink);min-width:0;width:100%}
+input[type=text]{width:12em;max-width:100%}
+textarea{resize:vertical;min-height:3em}
+.btn{border:1px solid var(--ink);background:var(--ink);color:var(--bg);padding:7px 14px;border-radius:8px;cursor:pointer;font-weight:500;font-size:14px}
+.btn:disabled{opacity:.35;cursor:default}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+.btn.ghost:hover:not(:disabled){border-color:var(--ink)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.chips>span{font-size:12px;color:var(--muted);margin-right:2px}
+.chip{border:1px dashed var(--line);background:none;padding:3px 10px;border-radius:999px;cursor:pointer;font-family:var(--f-mono);font-size:12.5px;color:var(--muted)}
+.chip:hover{color:var(--ink);border-color:var(--ink)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{border:0;background:none;padding:7px 12px;cursor:pointer;font-size:14px;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+
+/* bit grid */
+.grid-wrap{overflow-x:auto;padding:4px 2px 8px}
+.g{display:inline-flex;flex-direction:column;gap:3px}
+.g-row{display:flex;align-items:center;gap:10px}
+.g-lab{width:5.2em;flex-shrink:0;text-align:right;font-size:12px;color:var(--muted)}
+.g-cells{display:flex;gap:3px}
+.total .g-cells{border-top:2px solid var(--ink);padding-top:5px}
+.c{width:1.9em;height:2.1em;display:inline-grid;place-items:center;font-family:var(--f-mono);font-size:15px;border-radius:5px;flex-shrink:0}
+.b1{background:var(--led-soft);color:var(--led);font-weight:600}
+.b0{background:var(--cell);color:var(--muted)}
+.bh{background:var(--cell);color:var(--ink);font-weight:600}
+.bx{background:transparent}
+.cy{height:1.5em;font-size:12px;background:transparent!important;color:var(--teal);font-weight:600}
+.hi{box-shadow:inset 0 0 0 2px var(--teal);animation:pop .35s ease}
+.flip{box-shadow:inset 0 0 0 2px var(--g-sz)}
+.strike{text-decoration:line-through;opacity:.45}
+@keyframes pop{from{transform:scale(.8)}to{transform:none}}
+.stage{min-height:120px}
+.note{margin:0;padding:10px 12px;border-left:3px solid var(--teal);background:var(--teal-soft);border-radius:0 8px 8px 0;font-size:14.5px}
+.ctrl{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.count{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;min-width:5.5em;text-align:center}
+.msg-err{color:var(--bad);background:var(--bad-soft);padding:10px 12px;border-radius:8px;margin:0}
+.result{font-family:var(--f-mono);font-size:20px;font-weight:600;padding:12px 14px;border-radius:10px;background:var(--led-soft);color:var(--ink);overflow-x:auto}
+.result sub{font-size:.6em;color:var(--muted)}
+.step-h{font-size:13px;font-weight:600;color:var(--teal);text-transform:uppercase;letter-spacing:.08em;margin:0 0 6px}
+
+/* converter */
+.pos{display:inline-grid;gap:3px;font-family:var(--f-mono)}
+.pos-row{display:flex;gap:3px}
+.pos-row .c.idx{height:1.4em;font-size:11px;color:var(--teal);background:none}
+.terms{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-family:var(--f-mono);font-size:14px;margin-top:8px}
+.term{background:var(--cell);padding:3px 8px;border-radius:6px;white-space:nowrap}
+.term small{color:var(--muted)}
+.divt{border-collapse:collapse;font-family:var(--f-mono);font-size:14px}
+.divt td{padding:3px 10px 3px 0;white-space:nowrap}
+.divt .r{display:inline-grid;place-items:center;min-width:1.8em;height:1.8em;border-radius:5px;background:var(--led-soft);color:var(--led);font-weight:600}
+.divt .arrow{color:var(--teal);font-family:var(--f-body);font-size:12px}
+.groups{display:flex;flex-wrap:wrap;gap:8px}
+.grp{display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 8px;border-radius:8px;border:1px solid var(--line);font-family:var(--f-mono)}
+.grp .dig{font-weight:700;color:var(--led);font-size:17px}
+.hexgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;font-family:var(--f-mono);font-size:13px}
+.hexgrid div{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:2px 6px;display:flex;justify-content:space-between;gap:6px}
+.hexgrid b{color:var(--led)}
+
+/* codes */
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
+table.t{border-collapse:collapse;width:100%;font-size:13.5px}
+table.t th,table.t td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+table.t th{font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600;background:var(--bg)}
+table.t tr:last-child td{border-bottom:0}
+table.t td.mono{font-family:var(--f-mono)}
+.z{color:var(--teal);font-weight:600}
+.d{color:var(--led);font-weight:600}
+.keys{display:grid;grid-template-columns:repeat(9,minmax(0,1fr));gap:5px}
+.kbd{border:1px solid transparent;border-radius:7px;padding:6px 0;cursor:pointer;font-family:var(--f-mono);font-weight:600;font-size:15px}
+.k-AI{background:var(--g-ai-soft);color:var(--g-ai)}
+.k-JR{background:var(--g-jr-soft);color:var(--g-jr)}
+.k-SZ{background:var(--g-sz-soft);color:var(--g-sz)}
+.k-DG{background:var(--g-dg-soft);color:var(--g-dg)}
+.kbd[aria-pressed="true"]{border-color:var(--ink)}
+.keyrow-label{grid-column:1/-1;font-size:11.5px;color:var(--muted);margin-top:4px}
+.detail{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.dcard{border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-width:0}
+.dcard .lbl{color:var(--muted)}
+.dcard .v{font-family:var(--f-mono);font-size:20px;font-weight:600}
+.dcard .w{font-size:12.5px;color:var(--muted)}
+.joined{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:6px 12px;align-items:center;font-size:13.5px}
+.joined .val{font-family:var(--f-mono);overflow-x:auto;white-space:nowrap;padding:4px 8px;background:var(--bg);border-radius:6px}
+.copy{border:1px solid var(--line);background:none;border-radius:6px;padding:2px 8px;cursor:pointer;font-size:12px;color:var(--muted)}
+
+/* zoned/packed */
+.nibs{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.byte{display:flex;gap:2px;padding:4px;border:1px solid var(--line);border-radius:8px;position:relative}
+.byte::after{content:attr(data-i);position:absolute;bottom:-17px;left:0;right:0;text-align:center;font-size:10.5px;color:var(--muted)}
+.nib{width:2em;height:2.3em;display:grid;place-items:center;font-family:var(--f-mono);font-weight:600;font-size:17px;border-radius:5px;background:var(--cell)}
+.nib.zone{color:var(--muted)}
+.nib.digit{color:var(--ink)}
+.nib.sign{background:var(--g-sz-soft);color:var(--g-sz);box-shadow:inset 0 0 0 2px var(--g-sz)}
+.nib.pad{background:var(--led-soft);color:var(--led);box-shadow:inset 0 0 0 2px var(--led)}
+.nib.gone{opacity:.3;text-decoration:line-through}
+.zp-meta{display:flex;flex-wrap:wrap;gap:8px}
+.pill{font-size:13px;padding:3px 10px;border-radius:999px;background:var(--cell)}
+.pill b{font-family:var(--f-mono)}
+
+/* sort */
+.sortcols{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.sortcol{border:1px solid var(--line);border-radius:10px;padding:12px;min-width:0}
+.sortcol h3{font-size:15px;margin-bottom:2px}
+.sortcol .rule{font-size:12.5px;color:var(--muted);margin:0 0 8px}
+.sitem{display:flex;justify-content:space-between;gap:8px;font-family:var(--f-mono);padding:4px 8px;border-radius:6px;background:var(--bg);margin-top:4px;font-size:14px}
+.sitem small{color:var(--muted);font-size:11.5px;overflow-x:auto;white-space:nowrap}
+.why{font-size:12px;color:var(--teal);padding:2px 8px}
+
+/* quiz */
+.topics{display:flex;flex-wrap:wrap;gap:6px}
+.topic{border:1px solid var(--line);background:none;border-radius:999px;padding:5px 12px;cursor:pointer;font-size:13.5px;color:var(--muted)}
+.topic[aria-pressed="true"]{background:var(--teal-soft);color:var(--teal);border-color:var(--teal);font-weight:500}
+.score{display:flex;gap:14px;font-size:13.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.score b{color:var(--ink);font-size:16px}
+.qcard{border:1px solid var(--line);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.qtag{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--teal);font-weight:700}
+.qtext{font-size:17px;font-weight:500}
+.qtext .mono{background:var(--cell);padding:1px 6px;border-radius:5px}
+.qfields{display:flex;flex-wrap:wrap;gap:10px}
+.qfields input{width:18em}
+.qfields input.ok{border-color:var(--good);background:var(--good-soft)}
+.qfields input.no{border-color:var(--bad);background:var(--bad-soft)}
+.opts{display:flex;flex-direction:column;gap:6px}
+.opt{text-align:left;border:1px solid var(--line);background:none;border-radius:8px;padding:8px 12px;cursor:pointer}
+.opt:hover:not(:disabled){border-color:var(--ink)}
+.opt.ok{border-color:var(--good);background:var(--good-soft)}
+.opt.no{border-color:var(--bad);background:var(--bad-soft)}
+.fb{border-radius:10px;padding:10px 12px;font-size:14px}
+.fb.ok{background:var(--good-soft)}
+.fb.no{background:var(--bad-soft)}
+.fb .ans{font-family:var(--f-mono);font-weight:600}
+footer{color:var(--muted);font-size:12.5px;padding-block:0 32px}
+
+@media (max-width:900px){.cols{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:760px){.hero{grid-template-columns:minmax(0,1fr)}.reg{justify-self:stretch}}
+@media (max-width:480px){.keys{grid-template-columns:repeat(6,minmax(0,1fr))}.c{width:1.7em}.g-lab{width:3.6em}.reg-out{grid-template-columns:repeat(2,auto)}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<header class="wrap hero">
+  <div>
+    <div class="eyebrow">Nhập môn Tin học · Chương 2</div>
+    <h1>Phòng Lab Nhị Phân</h1>
+    <p>Bấm vào từng bit để bật tắt, bấm “Bước tiếp” để xem phép tính chạy từng cột, rồi sang tab Luyện tập để làm đề sinh ngẫu nhiên. Các bảng mã làm đúng theo slide của lớp.</p>
+  </div>
+  <div class="reg" aria-label="Thanh ghi 8 bit">
+    <div class="reg-title"><span>Thanh ghi 8 bit · bấm để bật/tắt</span><span id="reg-clear" role="button" tabindex="0" style="cursor:pointer;text-transform:none;letter-spacing:0">xóa</span></div>
+    <div class="reg-bits" id="reg-bits"></div>
+    <div class="reg-out" id="reg-out"></div>
+  </div>
+</header>
+
+<nav class="tabs" aria-label="Các bài">
+  <div class="wrap tabs-in">
+    <div class="tgroup"><span>Ôn lại</span>
+      <a class="tab" href="#co-so" data-tab="co-so">Đổi cơ số</a>
+      <a class="tab" href="#cong" data-tab="cong">Cộng</a>
+      <a class="tab" href="#tru" data-tab="tru">Trừ &amp; bù 1</a>
+      <a class="tab" href="#nhan-chia" data-tab="nhan-chia">Nhân &amp; chia</a>
+    </div>
+    <div class="tgroup"><span>Học cấp tốc</span>
+      <a class="tab" href="#bang-ma" data-tab="bang-ma">Bảng mã</a>
+      <a class="tab" href="#zoned-packed" data-tab="zoned-packed">Zoned / Packed</a>
+      <a class="tab" href="#sap-xep" data-tab="sap-xep">Sắp xếp</a>
+    </div>
+    <div class="tgroup"><span>Kiểm tra</span>
+      <a class="tab" href="#luyen-tap" data-tab="luyen-tap">Luyện tập</a>
+    </div>
+  </div>
+</nav>
+
+<main class="wrap">
+
+<!-- ĐỔI CƠ SỐ -->
+<section class="panel" id="p-co-so">
+  <h2>Đổi cơ số</h2>
+  <p class="sub">Nhập một số, chọn hệ nguồn và hệ đích. Trang hiện đủ các bước như khi làm bài trên giấy: khai triển sang hệ 10, chia liên tiếp, và cách đổi nhanh bằng nhóm bit.</p>
+  <div class="cols">
+    <div class="theory">
+      <div class="box"><h3>Hệ bất kỳ → hệ 10</h3>
+        <ol><li>Đánh số vị trí từ <b>phải sang trái, bắt đầu từ 0</b>.</li><li>Nhân ký số với cơ số<sup>vị trí</sup>.</li><li>Cộng các tích lại.</li></ol>
+        <p style="margin-top:6px">Sau dấu chấm, vị trí là <b>−1, −2, …</b> Ví dụ 0.1<sub>2</sub> = 1×2<sup>−1</sup> = 0.5.</p></div>
+      <div class="box"><h3>Hệ 10 → hệ khác</h3>
+        <ol><li>Chia liên tiếp cho cơ số mới, ghi số dư.</li><li>Dừng khi thương bằng 0.</li><li><b>Đọc số dư từ dưới lên.</b></li></ol></div>
+      <div class="box tip"><span class="lbl">Đổi nhanh</span>
+        Hệ 2 ↔ 8: nhóm <b>3 bit</b>. Hệ 2 ↔ 16: nhóm <b>4 bit</b>. Nhóm từ phải sang trái, nhóm cuối thiếu thì thêm 0 bên trái.</div>
+      <div class="box key"><span class="lbl">Học thuộc</span>
+        Lũy thừa của 2: 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024. Trọng số 4 bit là <b>8 4 2 1</b>.
+        <div class="hexgrid" id="hexgrid" style="margin-top:8px"></div></div>
+    </div>
+    <div class="tool">
+      <div class="inputs">
+        <div class="field"><label for="conv-val">Số cần đổi</label><input type="text" id="conv-val" value="952" autocomplete="off" spellcheck="false"></div>
+        <div class="field"><label for="conv-from">Từ hệ</label><select id="conv-from"><option value="2">2</option><option value="8">8</option><option value="10" selected>10</option><option value="16">16</option></select></div>
+        <div class="field"><label for="conv-to">Sang hệ</label><select id="conv-to"><option value="2">2</option><option value="8" selected>8</option><option value="10">10</option><option value="16">16</option></select></div>
+      </div>
+      <div class="chips"><span>Ví dụ trong slide:</span>
+        <button class="chip" data-conv="952,10,8">952₁₀ → 8</button>
+        <button class="chip" data-conv="10101,2,10">10101₂ → 10</button>
+        <button class="chip" data-conv="1AF,16,10">1AF₁₆ → 10</button>
+        <button class="chip" data-conv="110.101,2,10">110.101₂ → 10</button>
+        <button class="chip" data-conv="127.54,8,10">127.54₈ → 10</button>
+        <button class="chip" data-conv="111101,2,16">111101₂ → 16</button>
+        <button class="chip" data-conv="2AB,16,2">2AB₁₆ → 2</button>
+      </div>
+      <div id="conv-out" style="display:flex;flex-direction:column;gap:16px"></div>
+    </div>
+  </div>
+</section>
+
+<!-- CỘNG -->
+<section class="panel" id="p-cong" hidden>
+  <h2>Cộng nhị phân</h2>
+  <p class="sub">Cộng từ cột phải nhất sang trái, giống cộng tay hệ 10. Hàng “nhớ” phía trên cho thấy bit nhớ chuyển sang cột bên trái.</p>
+  <div class="cols">
+    <div class="theory">
+      <div class="box key"><span class="lbl">4 luật cộng</span>
+        <div class="mono" style="font-size:15px">0 + 0 = 0<br>0 + 1 = 1<br>1 + 1 = 10 &nbsp;→ viết 0, nhớ 1<br>1 + 1 + 1 = 11 → viết 1, nhớ 1</div></div>
+      <div class="box"><h3>Vì sao 1 + 1 = 10?</h3><p>Hệ 2 chỉ có ký số 0 và 1. Khi tổng đạt 2 thì không viết được “2”, nên viết 0 và nhớ 1 sang cột kế tiếp, giống hệ 10 khi tổng đạt 10.</p></div>
+      <div class="box tip"><span class="lbl">Thử lại</span>Đổi hai số và kết quả sang hệ 10 rồi cộng. Trang luôn hiện dòng thử lại ở bước cuối.</div>
+    </div>
+    <div class="tool">
+      <div class="inputs">
+        <div class="field"><label for="add-a">Số thứ nhất (hệ 2)</label><input type="text" id="add-a" value="11011" autocomplete="off" spellcheck="false"></div>
+        <div class="field"><label for="add-b">Số thứ hai (hệ 2)</label><input type="text" id="add-b" value="111" autocomplete="off" spellcheck="false"></div>
+      </div>
+      <div class="chips"><span>Ví dụ:</span>
+        <button class="chip" data-add="11011,111">11011 + 111</button>
+        <button class="chip" data-add="1100101,1001101">1100101 + 1001101</button>
+        <button class="chip" data-add="1010101,1100101">1010101 + 1100101</button>
+      </div>
+      <div class="stepper" id="add-step"></div>
+    </div>
+  </div>
+</section>
+
+<!-- TRỪ -->
+<section class="panel" id="p-tru" hidden>
+  <h2>Trừ nhị phân và trừ bù 1</h2>
+  <p class="sub">Chọn cách trừ. “Trừ bù 1” là dạng rất hay thi: đổi phép trừ thành phép cộng với phần bù của số trừ.</p>
+  <div class="cols">
+    <div class="theory">
+      <div class="box"><h3>Trừ thường (mượn)</h3>
+        <div class="mono">0 − 0 = 0 · 1 − 0 = 1<br>1 − 1 = 0 · 0 − 1 = 1, mượn 1</div>
+        <p style="margin-top:6px">Mượn 1 từ cột bên trái thì cột hiện tại được cộng thêm <b>2</b> (hệ 10 được thêm 10, hệ 8 thêm 8, hệ 16 thêm 16).</p></div>
+      <div class="box key"><span class="lbl">Trừ bù 1 · quy tắc 3 bước</span>
+        <ol><li>Thêm 0 cho số trừ <b>bằng độ dài</b> số bị trừ, rồi <b>đảo tất cả bit</b> (0↔1). Đó là phần bù.</li>
+        <li><b>Cộng</b> số bị trừ với phần bù.</li>
+        <li><b>Có nhớ 1</b> ở bit cao nhất: bỏ nhớ đó, <b>cộng thêm 1</b>, kết quả dương.<br><b>Không nhớ</b>: lấy <b>phần bù của tổng</b> và gắn dấu <b>âm</b>.</li></ol></div>
+      <div class="box tip"><span class="lbl">Cùng ý tưởng ở hệ 10 (bù 9)</span>
+        <span class="mono">18 − 35</span>: bù của 35 là 99 − 35 = 64. 18 + 64 = 82, không dư 1, nên kết quả = −(99 − 82) = −17.</div>
+    </div>
+    <div class="tool">
+      <div class="inputs">
+        <div class="field"><label for="sub-a">Số bị trừ (hệ 2)</label><input type="text" id="sub-a" value="1010101" autocomplete="off" spellcheck="false"></div>
+        <div class="field"><label for="sub-b">Số trừ (hệ 2)</label><input type="text" id="sub-b" value="1001100" autocomplete="off" spellcheck="false"></div>
+        <div class="field"><label>Cách trừ</label><div class="seg" id="sub-mode"><button type="button" data-m="bu1" aria-pressed="true">Bù 1</button><button type="button" data-m="muon" aria-pressed="false">Mượn</button></div></div>
+      </div>
+      <div class="chips"><span>Ví dụ trong slide:</span>
+        <button class="chip" data-sub="1010101,1001100,bu1">85 − 76 (có nhớ)</button>
+        <button class="chip" data-sub="101100,11100101,bu1">44 − 229 (không nhớ)</button>
+        <button class="chip" data-sub="10101,1110,muon">21 − 14 (mượn)</button>
+        <button class="chip" data-sub="1011100,111000,muon">92 − 56 (mượn)</button>
+      </div>
+      <div class="stepper" id="sub-step"></div>
+    </div>
+  </div>
+</section>
+
+<!-- NHÂN CHIA -->
+<section class="panel" id="p-nhan-chia" hidden>
+  <h2>Nhân và chia nhị phân</h2>
+  <p class="sub">Cả hai đều làm y như tính tay hệ 10, chỉ dễ hơn vì mỗi bit chỉ là 0 hoặc 1.</p>
+  <div class="cols">
+    <div class="theory">
+      <div class="box key"><span class="lbl">Nhân</span>
+        <div class="mono">0×0 = 0 · 0×1 = 0 · 1×0 = 0 · 1×1 = 1</div>
+        <p style="margin-top:6px">Bit của số nhân là <b>1</b> thì chép lại số bị nhân, là <b>0</b> thì viết dòng toàn 0. Mỗi dòng lùi sang trái 1 ô. Cuối cùng cộng tất cả các dòng.</p></div>
+      <div class="box key"><span class="lbl">Chia</span>
+        <p>Lấy từng bit từ trái sang của số bị chia. Nếu phần đang xét <b>trừ được</b> số chia thì ghi <b>1</b> vào thương rồi trừ. Nếu không thì ghi <b>0</b>. Hạ bit kế tiếp xuống và lặp lại.</p></div>
+    </div>
+    <div class="tool">
+      <h3 style="font-size:16px">Phép nhân</h3>
+      <div class="inputs">
+        <div class="field"><label for="mul-a">Số bị nhân</label><input type="text" id="mul-a" value="10101" autocomplete="off" spellcheck="false"></div>
+        <div class="field"><label for="mul-b">Số nhân</label><input type="text" id="mul-b" value="11001" autocomplete="off" spellcheck="false"></div>
+      </div>
+      <div class="chips"><span>Ví dụ:</span>
+        <button class="chip" data-mul="10101,11001">21 × 25</button>
+        <button class="chip" data-mul="100110,10010">100110 × 10010</button>
+        <button class="chip" data-mul="111000,111">111000 × 111</button>
+      </div>
+      <div class="stepper" id="mul-step"></div>
+      <hr style="border:0;border-top:1px solid var(--line);width:100%;margin:4px 0">
+      <h3 style="font-size:16px">Phép chia</h3>
+      <div class="inputs">
+        <div class="field"><label for="div-a">Số bị chia</label><input type="text" id="div-a" value="100001" autocomplete="off" spellcheck="false"></div>
+        <div class="field"><label for="div-b">Số chia</label><input type="text" id="div-b" value="110" autocomplete="off" spellcheck="false"></div>
+      </div>
+      <div class="chips"><span>Ví dụ:</span>
+        <button class="chip" data-div="100001,110">33 : 6</button>
+        <button class="chip" data-div="11001,101">11001 : 101</button>
+        <button class="chip" data-div="1111,11">1111 : 11</button>
+      </div>
+      <div class="stepper" id="div-step"></div>
+    </div>
+  </div>
+</section>
+
+<!-- BẢNG MÃ -->
+<section class="panel" id="p-bang-ma" hidden>
+  <h2>Bảng mã BCD, EBCDIC, ASCII</h2>
+  <p class="sub">Gõ một từ để xem mã từng ký tự, hoặc bấm vào bàn phím bên dưới để xem cách tra một ký tự. Phần <span class="z">vùng</span> tô xanh, phần <span class="d">số</span> tô cam.</p>
+  <div class="cols">
+    <div class="theory">
+      <div class="tbl-wrap"><table class="t">
+        <tr><th>Mã</th><th>Bit</th><th>Số ký tự</th><th>Cấu trúc</th></tr>
+        <tr><td><b>BCD</b></td><td>6</td><td>64 (2<sup>6</sup>)</td><td>2 bit vùng + 4 bit số</td></tr>
+        <tr><td><b>EBCDIC</b></td><td>8</td><td>256 (2<sup>8</sup>)</td><td>4 bit vùng + 4 bit số</td></tr>
+        <tr><td><b>ASCII-7</b></td><td>7</td><td>128 (2<sup>7</sup>)</td><td>3 bit vùng + 4 bit số</td></tr>
+        <tr><td><b>ASCII-8</b></td><td>8</td><td>256 (2<sup>8</sup>)</td><td>128 ký tự đầu giống ASCII-7</td></tr>
+        <tr><td><b>Unicode</b></td><td>—</td><td>hàng triệu</td><td>UTF-8, UTF-16, UTF-32</td></tr>
+      </table></div>
+      <div class="box key"><span class="lbl">Mẹo tra nhanh</span>
+        <ul>
+          <li>EBCDIC: vùng <b>C, D, E, F</b> lần lượt cho A–I, J–R, S–Z, chữ số. Phần số là thứ tự chữ trong nhóm.</li>
+          <li>BCD: vùng <b>11, 10, 01, 00</b> (đếm ngược) cho A–I, J–R, S–Z, chữ số.</li>
+          <li>Số 0 trong BCD là <span class="mono">00 1010</span>, trong EBCDIC là <span class="mono">F0</span>.</li>
+        </ul></div>
+      <div class="box warn"><span class="lbl">Bẫy hay sai</span>
+        Nhóm <b>S–Z bắt đầu đếm từ 2</b>: S = E2, T = E3, …, Z = E9 (BCD: S = 01 0010).</div>
+      <div class="box warn"><span class="lbl">ASCII-8 theo slide</span>
+        Slide dùng bảng riêng: A = A1, S = B3, chữ số 0 = 50. Bảng này <b>khác</b> ASCII mở rộng thông dụng (A = 41). Làm bài thi theo slide.</div>
+    </div>
+    <div class="tool">
+      <div class="inputs">
+        <div class="field" style="flex:1"><label for="code-text">Từ cần mã hóa (A–Z, 0–9)</label><input type="text" id="code-text" value="BYTE" autocomplete="off" spellcheck="false" style="width:100%;text-transform:uppercase"></div>
+      </div>
+      <div class="chips"><span>Ví dụ trong slide:</span>
+        <button class="chip" data-code="BASE">BASE</button><button class="chip" data-code="DIGIT">DIGIT</button><button class="chip" data-code="ZONE">ZONE</button><button class="chip" data-code="BOY">BOY</button><button class="chip" data-code="SKY">SKY</button><button class="chip" data-code="PROGRAM">PROGRAM</button>
+      </div>
+      <div id="code-out" style="display:flex;flex-direction:column;gap:14px"></div>
+      <hr style="border:0;border-top:1px solid var(--line);width:100%;margin:4px 0">
+      <h3 style="font-size:16px">Bàn phím tra mã</h3>
+      <div class="keys" id="keys"></div>
+      <div id="key-detail"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ZONED PACKED -->
+<section class="panel" id="p-zoned-packed" hidden>
+  <h2>Số thập phân dạng Zoned và Packed</h2>
+  <p class="sub">Nhập một số nguyên (có thể có dấu + hoặc −). Bấm từng bước để xem dạng Zoned được “nén” thành dạng Packed.</p>
+  <div class="cols">
+    <div class="theory">
+      <div class="box"><h3>Zoned decimal</h3>
+        <p>Mỗi chữ số chiếm 1 byte dạng <span class="mono">F<i>d</i></span>. Nửa byte trái của <b>chữ số cuối</b> là ký hiệu dấu:</p>
+        <p class="mono" style="margin-top:4px"><b>C</b> = dương (+) · <b>D</b> = âm (−) · <b>F</b> = không dấu</p></div>
+      <div class="box"><h3>Packed decimal</h3>
+        <ol><li>Đưa ký hiệu dấu ra <b>cực phải</b>.</li><li>Bỏ hết các chữ F vùng còn lại.</li><li>Số chữ số hex bị lẻ thì <b>thêm 0 bên trái</b> cho đủ byte.</li></ol>
+        <p style="margin-top:6px">Máy chỉ tính toán số học được ở dạng packed, và packed tiết kiệm bộ nhớ (2 chữ số/byte).</p></div>
+      <div class="box key"><span class="lbl">Đếm byte</span>
+        Zoned: <b>số byte = số chữ số</b>.<br>Packed: <b>(số chữ số + 1) / 2, làm tròn lên</b>.</div>
+    </div>
+    <div class="tool">
+      <div class="inputs">
+        <div class="field"><label for="zp-num">Số nguyên</label><input type="text" id="zp-num" value="-345" autocomplete="off" spellcheck="false"></div>
+      </div>
+      <div class="chips"><span>Ví dụ:</span>
+        <button class="chip" data-zp="345">345</button><button class="chip" data-zp="+345">+345</button><button class="chip" data-zp="-345">−345</button><button class="chip" data-zp="3456">3456</button><button class="chip" data-zp="12915">12915</button><button class="chip" data-zp="+9876">+9876</button><button class="chip" data-zp="-786">−786</button>
+      </div>
+      <div class="stepper" id="zp-step"></div>
+    </div>
+  </div>
+</section>
+
+<!-- SẮP XẾP -->
+<section class="panel" id="p-sap-xep" hidden>
+  <h2>Trình tự sắp xếp</h2>
+  <p class="sub">Máy so sánh chuỗi bằng mã của từng ký tự, từ trái sang phải. Vì mỗi bảng mã xếp chữ và số khác nhau nên cùng một danh sách có thể ra hai thứ tự khác nhau.</p>
+  <div class="cols">
+    <div class="theory">
+      <div class="box key"><span class="lbl">Quy tắc</span>
+        <p><b>ASCII:</b> số &lt; chữ (30h &lt; 41h).<br><b>EBCDIC:</b> chữ &lt; số (C1h &lt; F0h).</p>
+        <p style="margin-top:6px">Trong mọi bảng: A &lt; B &lt; … &lt; Z và 0 &lt; 1 &lt; … &lt; 9.</p></div>
+      <div class="box"><h3>Cách so hai chuỗi</h3><p>Xét ký tự đầu tiên. Nếu giống nhau thì xét ký tự thứ hai, cứ thế đến khi gặp ký tự khác nhau. Mã nào nhỏ hơn thì chuỗi đó đứng trước.</p></div>
+      <div class="box warn"><span class="lbl">Lưu ý BCD trong slide</span>
+        Slide nói BCD theo “số &lt; chữ” nhưng lại ghi ví dụ 23 &lt; 1A &lt; A1. Theo đúng quy tắc thì phải là 1A &lt; 23 &lt; A1 (vì “1” &lt; “2”). Nên hỏi lại giảng viên đáp án mong muốn.</div>
+    </div>
+    <div class="tool">
+      <div class="field"><label for="sort-in">Danh sách (cách nhau bằng dấu phẩy)</label><textarea id="sort-in" rows="2" spellcheck="false">BED, 512, 400, 128, BAD</textarea></div>
+      <div class="chips"><span>Ví dụ trong slide:</span>
+        <button class="chip" data-sort="BED, 512, 400, 128, BAD">BED, 512, 400, 128, BAD</button>
+        <button class="chip" data-sort="ABC, 123, 245, ADD">ABC, 123, 245, ADD</button>
+        <button class="chip" data-sort="23, A1, 1A">23, A1, 1A</button>
+      </div>
+      <div id="sort-out"></div>
+    </div>
+  </div>
+</section>
+
+<!-- LUYỆN TẬP -->
+<section class="panel" id="p-luyen-tap" hidden>
+  <h2>Luyện tập</h2>
+  <p class="sub">Đề sinh ngẫu nhiên, không bao giờ hết. Chọn chủ đề muốn luyện. Làm sai thì xem đáp án và bấm “Xem cách giải” để mở đúng công cụ với số của câu đó.</p>
+  <div class="tool">
+    <div class="topics" id="topics"></div>
+    <div class="score" id="score"></div>
+    <div class="qcard" id="qcard"></div>
+  </div>
+</section>
+
+</main>
+<footer class="wrap">Dựa theo tài liệu ôn tập Chương 2 “Các phép toán cơ bản trên hệ nhị phân”. Bảng ASCII-8 và quy tắc BCD làm theo slide của lớp.</footer>
+
+<script>
+(function(){
+"use strict";
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const isBin=s=>/^[01]+$/.test(s);
+const B=s=>BigInt("0b"+s);
+const strip=s=>s.replace(/^0+(?=.)/,"");
+const flip=s=>[...s].map(c=>c==="1"?"0":"1").join("");
+const sub=(v,b)=>`${v}<sub>${b}</sub>`;
+const errBox=m=>`<p class="msg-err">${m}</p>`;
+const clean=s=>s.replace(/[\s_]/g,"");
+
+/* ---------- bit grid helpers ---------- */
+function cell(ch,cls=""){const base=ch==="1"?"b1":ch==="0"?"b0":(ch===" "?"bx":"bh");return `<span class="c ${base} ${cls}">${ch===" "?"":esc(ch)}</span>`}
+function row(label,chars,clsFn,rowCls=""){return `<div class="g-row ${rowCls}"><span class="g-lab">${label}</span><span class="g-cells">${chars.map((ch,j)=>cell(ch,clsFn?clsFn(j):"")).join("")}</span></div>`}
+const ra=(s,W)=>[...s.padStart(W," ")];
+const grid=r=>`<div class="grid-wrap"><div class="g">${r}</div></div>`;
+
+/* ---------- stepper ---------- */
+function Stepper(host){
+  host.innerHTML=`<div class="stage"></div><p class="note" aria-live="polite"></p><div class="ctrl"><button type="button" class="btn ghost" data-a="prev">← Lùi</button><span class="count"></span><button type="button" class="btn" data-a="next">Bước tiếp →</button><button type="button" class="btn ghost" data-a="play">▶ Tự chạy</button><button type="button" class="btn ghost" data-a="end">Xem hết</button></div>`;
+  const stage=host.querySelector(".stage"),note=host.querySelector(".note"),count=host.querySelector(".count");
+  const bp=host.querySelector('[data-a="prev"]'),bn=host.querySelector('[data-a="next"]'),bplay=host.querySelector('[data-a="play"]'),bend=host.querySelector('[data-a="end"]');
+  let frames=[],i=0,timer=null;
+  function show(){const f=frames[i];stage.innerHTML=f.html||"";note.innerHTML=f.note||"";note.hidden=!f.note;
+    const n=frames.length-1;count.textContent=n>0?`Bước ${i}/${n}`:"";bp.disabled=i===0;bn.disabled=i>=n;bend.disabled=i>=n;bplay.disabled=n===0;}
+  function stop(){if(timer){clearInterval(timer);timer=null}bplay.textContent="▶ Tự chạy"}
+  host.querySelector(".ctrl").addEventListener("click",e=>{const b=e.target.closest("[data-a]");if(!b)return;const a=b.dataset.a;
+    if(a==="play"){if(timer){stop();return}if(i>=frames.length-1)i=0;bplay.textContent="❚❚ Dừng";show();
+      timer=setInterval(()=>{if(i<frames.length-1){i++;show()}if(i>=frames.length-1)stop()},1100);return}
+    stop();if(a==="prev"&&i>0)i--;if(a==="next"&&i<frames.length-1)i++;if(a==="end")i=frames.length-1;show();});
+  return{load(f,start=0){stop();frames=f.length?f:[{html:"",note:""}];i=Math.min(start,frames.length-1);show()}};
+}
+
+/* ---------- register ---------- */
+const reg=[0,1,0,0,0,0,0,1];
+const W8=[128,64,32,16,8,4,2,1];
+function renderReg(){
+  const box=$("#reg-bits");
+  box.innerHTML=W8.map(w=>`<div class="w">${w}</div>`).join("")+reg.map((b,i)=>`<button type="button" class="bitbtn ${b?"on":""}" data-i="${i}" aria-label="Bit trọng số ${W8[i]}: ${b}">${b}</button>`).join("")+
+    `<div class="nib-split" id="nh"></div><div class="nib-split" id="nl"></div>`;
+  const s=reg.join(""),n=parseInt(s,2),hi=s.slice(0,4),lo=s.slice(4);
+  $("#nh").textContent=`${hi} → ${parseInt(hi,2).toString(16).toUpperCase()}`;
+  $("#nl").textContent=`${lo} → ${parseInt(lo,2).toString(16).toUpperCase()}`;
+  const asc=n>=32&&n<127?`“${String.fromCharCode(n)}”`:"—";
+  const ebc=decodeEbc(n.toString(16).toUpperCase().padStart(2,"0"));
+  $("#reg-out").innerHTML=`<div><span>Hệ 10</span><b>${n}</b></div><div><span>Hệ 16</span><b>${n.toString(16).toUpperCase().padStart(2,"0")}</b></div><div><span>Hệ 8</span><b>${n.toString(8)}</b></div><div><span>Ký tự ASCII</span><b>${esc(asc)}</b></div><div><span>Ký tự EBCDIC</span><b>${ebc?`“${ebc}”`:"—"}</b></div><div><span>Phép tính</span><b style="font-size:12px;font-weight:400">${reg.map((b,i)=>b?W8[i]:null).filter(x=>x).join(" + ")||"0"}</b></div>`;
+}
+$("#reg-bits").addEventListener("click",e=>{const b=e.target.closest(".bitbtn");if(!b)return;reg[+b.dataset.i]^=1;renderReg();$(`.bitbtn[data-i="${b.dataset.i}"]`).focus()});
+const clr=()=>{reg.fill(0);renderReg()};
+$("#reg-clear").addEventListener("click",clr);$("#reg-clear").addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();clr()}});
+
+/* hex grid */
+$("#hexgrid").innerHTML=[...Array(16)].map((_,i)=>`<div><b>${i.toString(16).toUpperCase()}</b><span>${i.toString(2).padStart(4,"0")}</span></div>`).join("");
+
+/* ---------- converter ---------- */
+const dv=c=>parseInt(c,36);
+const digitsOf=b=>({2:"0, 1",8:"0 đến 7",10:"0 đến 9",16:"0 đến 9 và A đến F"}[b]);
+function fmtFrac(x){if(!x)return "";let s=x.toFixed(12).replace(/0+$/,"");return s.replace(/^0/,"")}
+function renderConv(){
+  const raw=clean($("#conv-val").value).toUpperCase(),from=+$("#conv-from").value,to=+$("#conv-to").value,out=$("#conv-out");
+  if(!raw){out.innerHTML=errBox("Nhập một số để bắt đầu.");return}
+  const m=raw.match(/^([0-9A-F]+)(?:\.([0-9A-F]+))?$/);
+  if(!m||[...(m[1]+(m[2]||""))].some(c=>dv(c)>=from)){out.innerHTML=errBox(`“${esc(raw)}” không phải số hệ ${from}. Hệ ${from} chỉ dùng ký số ${digitsOf(from)}.`);return}
+  const ip=m[1],fp=m[2]||"";
+  let iv=0n;for(const c of ip)iv=iv*BigInt(from)+BigInt(dv(c));
+  let fv=0;[...fp].forEach((c,i)=>fv+=dv(c)*Math.pow(from,-(i+1)));
+  const decStr=iv.toString()+fmtFrac(fv);
+  let html="",step=1;
+  if(from!==10){
+    const digs=[...ip],fr=[...fp];
+    const idx=[...digs.map((_,i)=>String(digs.length-1-i)),...(fr.length?["."]:[]),...fr.map((_,i)=>String(-(i+1)))];
+    const ds=[...digs,...(fr.length?["."]:[]),...fr];
+    const terms=[];
+    digs.forEach((c,i)=>{const p=digs.length-1-i;terms.push({c,p,v:(BigInt(dv(c))*BigInt(from)**BigInt(p)).toString()})});
+    fr.forEach((c,i)=>{const p=-(i+1);terms.push({c,p,v:fmtFrac(dv(c)*Math.pow(from,p))?("0"+fmtFrac(dv(c)*Math.pow(from,p))):"0"})});
+    html+=`<div><p class="step-h">Bước ${step++} · Khai triển sang hệ 10</p>
+      <div class="grid-wrap"><div class="pos"><div class="pos-row">${idx.map(x=>`<span class="c idx">${x}</span>`).join("")}</div><div class="pos-row">${ds.map(c=>cell(c==="."?" ":c)).join("")}</div></div></div>
+      <p style="margin:4px 0 0;font-size:13px;color:var(--muted)">Hàng trên là số thứ tự vị trí (từ phải sang trái, bắt đầu từ 0; sau dấu chấm là số âm).</p>
+      <div class="terms">${terms.map(t=>`<span class="term">${t.c}${dv(t.c)>9?`<small>(=${dv(t.c)})</small>`:""}×${from}<sup>${t.p}</sup> <small>= ${t.v}</small></span>`).join("<span>+</span>")}<span>= <b>${decStr}</b></span></div></div>`;
+  }
+  if(to!==10&&to!==from){
+    if(fp){html+=`<div class="box tip"><span class="lbl">Phần lẻ</span>Chương này chỉ yêu cầu đổi số có phần lẻ <b>sang hệ 10</b>. Hãy chọn “Sang hệ 10”.</div>`}
+    else{
+      let N=iv;const rows=[];if(N===0n)rows.push({n:0n,q:0n,r:0n});
+      while(N>0n){const q=N/BigInt(to),r=N%BigInt(to);rows.push({n:N,q,r});N=q}
+      const res=rows.map(r=>Number(r.r).toString(16).toUpperCase()).reverse().join("");
+      html+=`<div><p class="step-h">Bước ${step++} · Chia liên tiếp cho ${to}</p><div class="grid-wrap"><table class="divt">${rows.map((r,i)=>`<tr><td>${r.n} : ${to}</td><td>= ${r.q}</td><td>dư <span class="r">${Number(r.r).toString(16).toUpperCase()}</span>${Number(r.r)>9?` <small>(${r.r})</small>`:""}</td><td class="arrow">${i===rows.length-1?"↑ đọc số dư từ dưới lên":""}</td></tr>`).join("")}</table></div>
+      <p style="margin:6px 0 0">Đọc các số dư từ dưới lên: <b class="mono">${res}</b></p></div>`;
+      const g=(from===2&&(to===8||to===16))?(to===8?3:4):((to===2&&(from===8||from===16))?(from===8?3:4):0);
+      if(g){
+        let gh="";
+        if(from===2){const L=Math.ceil(ip.length/g)*g,p=ip.padStart(L,"0");const gs=p.match(new RegExp(`.{${g}}`,"g"));
+          gh=gs.map(x=>`<div class="grp"><span>${x}</span><span class="dig">${parseInt(x,2).toString(to).toUpperCase()}</span></div>`).join("");
+          gh=`<p style="margin:0 0 8px">Nhóm ${g} bit từ phải sang trái${L>ip.length?`, thêm ${L-ip.length} số 0 bên trái`:""}, mỗi nhóm đổi thành 1 chữ số:</p><div class="groups">${gh}</div>`}
+        else{gh=`<p style="margin:0 0 8px">Mỗi chữ số hệ ${from} đổi thành ${g} bit rồi ghép lại (bỏ số 0 thừa ở đầu):</p><div class="groups">${[...ip].map(c=>`<div class="grp"><span class="dig">${c}</span><span>${dv(c).toString(2).padStart(g,"0")}</span></div>`).join("")}</div>`}
+        html+=`<div class="box tip"><span class="lbl">Cách nhanh không cần qua hệ 10</span>${gh}</div>`;
+      }
+      html+=`<div class="result">${sub(raw,from)} = ${sub(res,to)}</div>`;out.innerHTML=html;return;
+    }
+  }
+  if(to===from) html+=`<div class="box">Hệ nguồn và hệ đích giống nhau. Hãy chọn hệ đích khác.</div>`;
+  else if(to===10) html+=`<div class="result">${sub(raw,from)} = ${sub(decStr,10)}</div>`;
+  out.innerHTML=html;
+}
+["conv-val","conv-from","conv-to"].forEach(id=>$("#"+id).addEventListener("input",renderConv));
+function openConv(v,f,t){$("#conv-val").value=v;$("#conv-from").value=f;$("#conv-to").value=t;renderConv()}
+
+/* ---------- addition ---------- */
+function addCore(pa,pb){const L=pa.length,info=[];let c=0;for(let k=0;k<L;k++){const x=+pa[L-1-k],y=+pb[L-1-k],t=x+y+c;info.push({x,y,c,t,bit:t%2,co:t>>1});c=t>>1}return{info,carry:c,sum:(c?"1":"")+info.map(o=>o.bit).reverse().join("")}}
+function addGrid(a,b,upto,hiK,labs){
+  const L=Math.max(a.length,b.length),W=L+1,pa=a.padStart(L,"0"),pb=b.padStart(L,"0"),{info,carry}=addCore(pa,pb);
+  const hc=j=>(W-1-j)===hiK?"hi":"";
+  const cy=[...Array(W)].map((_,j)=>{const k=W-1-j;if(k<1||k>upto)return " ";const ci=k<L?info[k].c:carry;return ci?"1":" "});
+  const S=[...Array(W)].map((_,j)=>{const k=W-1-j;if(k<L)return k<upto?String(info[k].bit):" ";return(upto>L&&carry)?"1":" "});
+  return grid(row("nhớ",cy,j=>"cy "+hc(j))+row(labs?labs[0]:"",ra(a,W),hc)+row(labs?labs[1]:"+",ra(b,W),hc)+row("=",S,hc,"total"));
+}
+function addFrames(a,b){
+  const L=Math.max(a.length,b.length),{info,carry,sum}=addCore(a.padStart(L,"0"),b.padStart(L,"0"));
+  const f=[{html:addGrid(a,b,0,-1),note:"Viết hai số thẳng hàng bên phải. Cộng từ cột phải nhất sang trái."}];
+  info.forEach((o,k)=>f.push({html:addGrid(a,b,k+1,k),note:`Cột ${k} (đếm từ phải): ${o.x} + ${o.y}${o.c?" + nhớ 1":""} = ${o.t}${o.t>=2?` = ${o.t.toString(2)}₂`:""} → viết <b>${o.bit}</b>${o.co?", nhớ 1 sang cột bên trái":""}.`}));
+  f.push({html:addGrid(a,b,L+1,carry?L:-1),note:`${carry?"Cột cao nhất còn nhớ 1 nên viết 1 ra đầu. ":""}Kết quả: <b class="mono">${strip(sum)}₂</b>. Thử lại bằng hệ 10: ${B(a)} + ${B(b)} = ${B(a)+B(b)} ✓`});
+  return f;
+}
+const addSt=Stepper($("#add-step"));
+function renderAdd(){const a=clean($("#add-a").value),b=clean($("#add-b").value);
+  if(!isBin(a)||!isBin(b)){addSt.load([{html:errBox("Cả hai số chỉ được gồm chữ số 0 và 1."),note:""}]);return}addSt.load(addFrames(a,b))}
+["add-a","add-b"].forEach(id=>$("#"+id).addEventListener("input",renderAdd));
+function openAdd(a,b){$("#add-a").value=a;$("#add-b").value=b;renderAdd()}
+
+/* ---------- subtraction ---------- */
+let subMode="bu1";
+function borrowFrames(a0,b0){
+  let a=a0,b=b0,neg=false;if(B(a)<B(b)){[a,b]=[b,a];neg=true}
+  const L=Math.max(a.length,b.length),pa=a.padStart(L,"0"),pb=b.padStart(L,"0"),info=[];let br=0;
+  for(let k=0;k<L;k++){const x=+pa[L-1-k],y=+pb[L-1-k];let t=x-y-br,bo=0;if(t<0){t+=2;bo=1}info.push({x,y,br,t,bo});br=bo}
+  const W=L;
+  const g=(upto,hiK)=>{const hc=j=>(W-1-j)===hiK?"hi":"";
+    const mr=[...Array(W)].map((_,j)=>{const k=W-1-j;return(k>=1&&k<=upto&&info[k-1].bo)?"1":" "});
+    const D=[...Array(W)].map((_,j)=>{const k=W-1-j;return k<upto?String(info[k].t):" "});
+    return grid(row("bị mượn",mr,j=>"cy "+hc(j))+row("",ra(a,W),hc)+row("−",ra(b,W),hc)+row("=",D,hc,"total"))};
+  const f=[{html:g(0,-1),note:(neg?`Số bị trừ nhỏ hơn số trừ nên <b>đổi chỗ</b> hai số để trừ, kết quả mang dấu âm. `:"")+"Trừ từ cột phải sang trái. Hàng “bị mượn” đánh dấu cột đã cho cột bên phải mượn 1, nên phải trừ bớt 1."}];
+  info.forEach((o,k)=>{const lhs=`${o.x}${o.br?" − 1 (đã cho mượn)":""} − ${o.y}`;
+    f.push({html:g(k+1,k),note:o.bo?`Cột ${k}: ${lhs} không đủ trừ → <b>mượn 1</b> từ cột bên trái, cột này được cộng thêm 2: ${o.x+2}${o.br?" − 1":""} − ${o.y} = ${o.t} → viết <b>${o.t}</b>.`:`Cột ${k}: ${lhs} = ${o.t} → viết <b>${o.t}</b>.`})});
+  const r=strip(info.map(o=>o.t).reverse().join(""));
+  f.push({html:g(L,-1),note:`Kết quả: <b class="mono">${neg?"−":""}${r}₂</b>. Thử lại: ${B(a0)} − ${B(b0)} = ${B(a0)-B(b0)} ✓`});
+  return f;
+}
+function bu1Frames(a,b){
+  const L=Math.max(a.length,b.length),pa=a.padStart(L,"0"),pb=b.padStart(L,"0"),cp=flip(pb),{carry,sum}=addCore(pa,cp);
+  const f=[];
+  const padNote=[a.length<L?`số bị trừ thêm ${L-a.length} số 0 → ${pa}`:"",b.length<L?`số trừ thêm ${L-b.length} số 0 → ${pb}`:""].filter(Boolean).join("; ");
+  f.push({html:grid(row("Số bị trừ",[...pa])+row("Số trừ",[...pb])),note:`<b>Chuẩn bị:</b> cho hai số dài bằng nhau (${L} bit)${padNote?`: ${padNote}`:", ở đây đã bằng nhau"}.`});
+  f.push({html:grid(row("Số trừ",[...pb])+row("Phần bù",[...cp],()=>"flip")),note:`<b>Bước 1:</b> đảo từng bit của số trừ (0 thành 1, 1 thành 0). Phần bù 1 của ${pb} là <b class="mono">${cp}</b>.`});
+  f.push({html:addGrid(pa,cp,L+1,-1,["Số bị trừ","+ bù"]),note:`<b>Bước 2:</b> cộng số bị trừ với phần bù: ${pa} + ${cp} = <b class="mono">${sum}</b>. ${carry?"Tổng dài hơn "+L+" bit, tức là <b>có nhớ 1</b> ở bit cao nhất.":"Tổng vẫn "+L+" bit, tức là <b>không có nhớ</b>."}`});
+  const W=L+1;
+  if(carry){const s=sum.slice(1),r=(B(s)+1n).toString(2).padStart(L,"0");
+    f.push({html:grid(row("Tổng",ra(sum,W),j=>j===0?"strike":"")+row("+ 1",ra("1",W),j=>j===W-1?"hi":"")+row("=",ra(r,W),null,"total")),note:`<b>Bước 3:</b> có nhớ 1 → bỏ bit nhớ đó (gạch đi), rồi <b>cộng thêm 1</b>: ${s} + 1 = <b class="mono">${r}</b>. Kết quả <b>dương</b>.`});
+    f.push({html:`<div class="result">${a} − ${b} = ${strip(r)}${"<sub>2</sub>"}</div>`,note:`Thử lại: ${B(a)} − ${B(b)} = ${B(a)-B(b)} ✓`});
+  }else{const r=flip(sum),zero=!r.includes("1");
+    f.push({html:grid(row("Tổng",[...sum])+row("Bù của tổng",[...r],()=>"flip")),note:`<b>Bước 3:</b> không có nhớ → lấy <b>phần bù của tổng</b>: đảo bit ${sum} được <b class="mono">${r}</b>, rồi gắn dấu âm.${zero?" Ở đây ra “−0”, tức là bằng 0.":""}`});
+    f.push({html:`<div class="result">${a} − ${b} = ${zero?"0":"−"+r}${"<sub>2</sub>"}</div>`,note:`Thử lại: ${B(a)} − ${B(b)} = ${B(a)-B(b)} ✓${zero?"":` (${r}₂ = ${B(r)})`}`});
+  }
+  return f;
+}
+const subSt=Stepper($("#sub-step"));
+function renderSub(){const a=clean($("#sub-a").value),b=clean($("#sub-b").value);
+  if(!isBin(a)||!isBin(b)){subSt.load([{html:errBox("Cả hai số chỉ được gồm chữ số 0 và 1."),note:""}]);return}
+  subSt.load(subMode==="bu1"?bu1Frames(a,b):borrowFrames(a,b))}
+["sub-a","sub-b"].forEach(id=>$("#"+id).addEventListener("input",renderSub));
+function setSubMode(m){subMode=m;$$("#sub-mode button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.m===m)))}
+$("#sub-mode").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;setSubMode(b.dataset.m);renderSub()});
+function openSub(a,b,m){$("#sub-a").value=a;$("#sub-b").value=b;setSubMode(m);renderSub()}
+
+/* ---------- multiplication ---------- */
+function mulFrames(a,b){
+  const W=a.length+b.length,n=b.length;
+  const parts=[...b].reverse().map((bit,k)=>({bit,p:(bit==="1"?a:"0".repeat(a.length))+" ".repeat(k)}));
+  const prod=(B(a)*B(b)).toString(2);
+  const build=(cnt,hiK,final)=>{let r=row("",ra(a,W))+row("×",ra(b,W),j=>(W-1-j)===hiK?"hi":"","total");
+    parts.slice(0,cnt).forEach((p,k)=>{r+=row(k===0?"":"",ra(p.p,W),j=>k===hiK&&p.p[p.p.length-1-(W-1-j)]!==undefined&&(W-1-j)>=k&&(W-1-j)<k+a.length?"hi":"")});
+    if(final)r+=row("=",ra(prod,W),null,"total");return grid(r)};
+  const f=[{html:build(0,-1),note:"Lần lượt lấy từng bit của số nhân, từ phải sang trái."}];
+  parts.forEach((p,k)=>f.push({html:build(k+1,k),note:`Bit thứ ${k} (từ phải) của số nhân là <b>${p.bit}</b> → ${p.bit==="1"?"chép lại số bị nhân":"viết dòng toàn số 0"}${k?`, lùi sang trái ${k} ô`:""}.`}));
+  f.push({html:build(n,-1,true),note:`Cộng tất cả các dòng lại (cộng nhị phân như tab Cộng): kết quả <b class="mono">${prod}₂</b>. Thử lại: ${B(a)} × ${B(b)} = ${B(a)*B(b)} ✓`});
+  return f;
+}
+const mulSt=Stepper($("#mul-step"));
+function renderMul(){const a=clean($("#mul-a").value),b=clean($("#mul-b").value);
+  if(!isBin(a)||!isBin(b)){mulSt.load([{html:errBox("Cả hai số chỉ được gồm chữ số 0 và 1."),note:""}]);return}mulSt.load(mulFrames(strip(a),strip(b)))}
+["mul-a","mul-b"].forEach(id=>$("#"+id).addEventListener("input",renderMul));
+function openMul(a,b){$("#mul-a").value=a;$("#mul-b").value=b;renderMul()}
+
+/* ---------- division ---------- */
+function divFrames(D,d){
+  const dv_=B(d);let cur=0n,q="";const st=[];
+  [...D].forEach((bit,i)=>{cur=cur*2n+BigInt(bit);const ok=cur>=dv_;st.push({i,bit,cur,ok,after:ok?cur-dv_:cur});q+=ok?"1":"0";if(ok)cur-=dv_});
+  const table=n=>`<div class="grid-wrap">${grid(row("Số bị chia",[...D],j=>j<n?(j===n-1?"hi":""):"strike"))}</div>
+    <div class="tbl-wrap"><table class="t"><tr><th>Hạ bit</th><th>Đang xét</th><th>So với ${d}</th><th>Ghi vào thương</th><th>Còn lại</th></tr>${st.slice(0,n).map(s=>`<tr><td class="mono">${s.bit}</td><td class="mono">${s.cur.toString(2)} <small>(${s.cur})</small></td><td>${s.ok?"≥ → trừ được":"&lt; → không trừ được"}</td><td class="mono"><b>${s.ok?1:0}</b></td><td class="mono">${s.after.toString(2)}</td></tr>`).join("")}</table></div>
+    <p style="margin:0">Thương đến lúc này: <b class="mono">${q.slice(0,n)||"…"}</b></p>`;
+  const f=[{html:table(0),note:`Chia ${D} cho ${d}. Lấy lần lượt từng bit của số bị chia từ trái sang.`}];
+  st.forEach((s,i)=>f.push({html:table(i+1),note:`Hạ bit <b>${s.bit}</b>: đang xét ${s.cur.toString(2)} (= ${s.cur}). ${s.ok?`${s.cur} ≥ ${dv_} nên ghi <b>1</b>, trừ đi ${d} còn ${s.after.toString(2)}.`:`${s.cur} &lt; ${dv_} nên ghi <b>0</b>.`}`}));
+  const qq=strip(q),r=cur.toString(2);
+  f.push({html:table(st.length)+`<div class="result">${D} : ${d} = ${qq}<sub>2</sub> dư ${r}<sub>2</sub></div>`,note:`Bỏ các số 0 thừa ở đầu thương. Thử lại: ${B(D)} : ${dv_} = ${B(qq)} dư ${cur} ✓`});
+  return f;
+}
+const divSt=Stepper($("#div-step"));
+function renderDiv(){const a=clean($("#div-a").value),b=clean($("#div-b").value);
+  if(!isBin(a)||!isBin(b)){divSt.load([{html:errBox("Cả hai số chỉ được gồm chữ số 0 và 1."),note:""}]);return}
+  if(B(b)===0n){divSt.load([{html:errBox("Không chia được cho 0."),note:""}]);return}divSt.load(divFrames(a,strip(b)))}
+["div-a","div-b"].forEach(id=>$("#"+id).addEventListener("input",renderDiv));
+function openDiv(a,b){$("#div-a").value=a;$("#div-b").value=b;renderDiv()}
+
+/* ---------- character codes ---------- */
+const AZ="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+function cinfo(ch){
+  if(/^[A-Z]$/.test(ch)){const i=AZ.indexOf(ch);
+    if(i<9)return{g:"AI",gn:"A–I",pos:i+1,zb:"11",ez:"C",d:i+1};
+    if(i<18)return{g:"JR",gn:"J–R",pos:i-8,zb:"10",ez:"D",d:i-8};
+    return{g:"SZ",gn:"S–Z",pos:i-17,zb:"01",ez:"E",d:i-16}}
+  if(/^[0-9]$/.test(ch)){const n=+ch;return{g:"DG",gn:"chữ số",pos:n,zb:"00",ez:"F",d:n}}
+  return null}
+function codes(ch){const o=cinfo(ch);if(!o)return null;
+  const bd=(o.g==="DG"&&o.d===0)?10:o.d,bcd=o.zb+bd.toString(2).padStart(4,"0"),bcdO=parseInt(bcd,2).toString(8).padStart(2,"0");
+  const eh=o.ez+String(o.d),eb=parseInt(eh,16).toString(2).padStart(8,"0");
+  const a7=ch.charCodeAt(0),a8=a7+(o.g==="DG"?0x20:0x60);
+  return{...o,bcd,bcdO,eh,eb,a7h:a7.toString(16).toUpperCase(),a7b:a7.toString(2).padStart(7,"0"),a8h:a8.toString(16).toUpperCase(),a8b:a8.toString(2).padStart(8,"0")}}
+function decodeEbc(h){if(!/^[C-F][0-9]$/.test(h))return null;const z=h[0],d=+h[1];
+  if(z==="F")return String(d);if(d<1)return null;if(z==="C")return AZ[d-1];if(z==="D")return AZ[8+d];if(d<2)return null;return AZ[16+d]}
+const zd=(bits,zl)=>`<span class="z">${bits.slice(0,zl)}</span><span class="d">${bits.slice(zl)}</span>`;
+function renderCodes(){
+  const t=$("#code-text").value.toUpperCase().replace(/\s/g,""),out=$("#code-out");
+  if(!t){out.innerHTML=errBox("Gõ một từ, ví dụ BYTE.");return}
+  const bad=[...new Set([...t].filter(c=>!cinfo(c)))];
+  const cs=[...t].map(c=>({c,x:codes(c)})).filter(o=>o.x);
+  let h=bad.length?errBox(`Chương này chỉ tra chữ A–Z và số 0–9. Bỏ qua: ${esc(bad.join(" "))}`):"";
+  if(cs.length){
+    h+=`<div class="tbl-wrap"><table class="t"><tr><th>Ký tự</th><th>Nhóm</th><th>BCD (vùng+số)</th><th>BCD bát phân</th><th>EBCDIC nhị phân</th><th>EBCDIC hex</th><th>ASCII-7</th><th>hex</th><th>ASCII-8 (slide)</th><th>hex</th></tr>
+      ${cs.map(({c,x})=>`<tr><td><span class="kbd k-${x.g}" style="padding:2px 8px">${c}</span></td><td>${x.gn}${x.g!=="DG"?`, thứ ${x.pos}`:""}</td><td class="mono">${zd(x.bcd,2)}</td><td class="mono">${x.bcdO}</td><td class="mono">${zd(x.eb,4)}</td><td class="mono"><b>${x.eh}</b></td><td class="mono">${zd(x.a7b,3)}</td><td class="mono"><b>${x.a7h}</b></td><td class="mono">${x.a8b}</td><td class="mono"><b>${x.a8h}</b></td></tr>`).join("")}</table></div>`;
+    const J=[["BCD nhị phân",cs.map(o=>o.x.bcd).join(" ")],["BCD bát phân",cs.map(o=>o.x.bcdO).join(" ")],["EBCDIC nhị phân",cs.map(o=>o.x.eb).join(" ")],["EBCDIC hex",cs.map(o=>o.x.eh).join(" ")],["ASCII-7 nhị phân",cs.map(o=>o.x.a7b).join(" ")],["ASCII-7 hex",cs.map(o=>o.x.a7h).join(" ")],["ASCII-8 nhị phân",cs.map(o=>o.x.a8b).join(" ")],["ASCII-8 hex",cs.map(o=>o.x.a8h).join(" ")]];
+    h+=`<div><p class="step-h">Đáp án viết liền · ${cs.length} ký tự = ${cs.length} byte</p><div class="joined">${J.map(([k,v])=>`<span>${k}</span><span class="val">${v}</span><button type="button" class="copy" data-copy="${v}">Chép</button>`).join("")}</div></div>`;
+  }
+  out.innerHTML=h;
+}
+$("#code-text").addEventListener("input",renderCodes);
+function openCode(t){$("#code-text").value=t;renderCodes()}
+document.addEventListener("click",async e=>{const b=e.target.closest("[data-copy]");if(!b)return;
+  try{await navigator.clipboard.writeText(b.dataset.copy);b.textContent="Đã chép"}catch(_){const v=b.previousElementSibling;const r=document.createRange();r.selectNodeContents(v);const s=getSelection();s.removeAllRanges();s.addRange(r);b.textContent="Đã chọn"}
+  setTimeout(()=>b.textContent="Chép",1400)});
+/* keyboard */
+(function(){const groups=[["A–I · vùng BCD 11 · EBCDIC C","ABCDEFGHI"],["J–R · vùng BCD 10 · EBCDIC D","JKLMNOPQR"],["S–Z · vùng BCD 01 · EBCDIC E · bắt đầu từ 2","STUVWXYZ"],["Chữ số · vùng BCD 00 · EBCDIC F","1234567890"]];
+  $("#keys").innerHTML=groups.map(([l,s])=>`<div class="keyrow-label">${l}</div>`+[...s].map(c=>`<button type="button" class="kbd k-${cinfo(c).g}" data-k="${c}" aria-pressed="false">${c}</button>`).join("")).join("")})();
+function showKey(c){$$(".kbd[data-k]").forEach(k=>k.setAttribute("aria-pressed",String(k.dataset.k===c)));const x=codes(c);
+  const where=x.g==="DG"?(c==="0"?"Số 0 là trường hợp đặc biệt.":`Chữ số ${c}.`):`${c} thuộc nhóm ${x.gn}, là chữ thứ ${x.pos} trong nhóm${x.g==="SZ"?`, nhưng nhóm S–Z đếm từ 2 nên phần số là ${x.d}`:""}.`;
+  $("#key-detail").innerHTML=`<p class="note" style="margin:10px 0">${where}</p><div class="detail">
+    <div class="dcard"><span class="lbl">BCD</span><div class="v">${zd(x.bcd,2)}</div><div class="w">vùng ${x.zb} + số ${x.bcd.slice(2)} · bát phân ${x.bcdO}</div></div>
+    <div class="dcard"><span class="lbl">EBCDIC</span><div class="v">${x.eh}</div><div class="w">${zd(x.eb,4)} · vùng ${x.ez} + số ${x.eh[1]}</div></div>
+    <div class="dcard"><span class="lbl">ASCII-7</span><div class="v">${x.a7h}</div><div class="w">${zd(x.a7b,3)}</div></div>
+    <div class="dcard"><span class="lbl">ASCII-8 (slide)</span><div class="v">${x.a8h}</div><div class="w">${x.a8b}</div></div></div>`}
+$("#keys").addEventListener("click",e=>{const k=e.target.closest("[data-k]");if(k)showKey(k.dataset.k)});
+
+/* ---------- zoned / packed ---------- */
+function zpInfo(raw){const m=raw.match(/^([+-]?)(\d+)$/);if(!m)return null;const s=m[1],ds=m[2],sn=s==="+"?"C":s==="-"?"D":"F";
+  const zon=[...ds].map((d,i)=>(i===ds.length-1?sn:"F")+d).join("");
+  let pk=ds+sn;if(pk.length%2)pk="0"+pk;return{s,ds,sn,zon,pk,zb:ds.length,pb:pk.length/2}}
+function zpFrames(raw){const z=zpInfo(raw);if(!z)return[{html:errBox("Nhập số nguyên, có thể có dấu + hoặc − ở đầu. Ví dụ −345."),note:""}];
+  const {ds,sn}=z,n=ds.length,signName={C:"C = dương",D:"D = âm",F:"F = không dấu"}[sn];
+  const nib=(v,c)=>`<span class="nib ${c}">${v}</span>`;
+  const bytes=arr=>`<div class="nibs" style="padding-bottom:16px">${arr.map((p,i)=>`<div class="byte" data-i="byte ${i+1}">${p}</div>`).join("")}</div>`;
+  const f=[];
+  f.push({html:bytes([...ds].map((d,i)=>nib(i===n-1?sn:"F",i===n-1?"sign":"zone")+nib(d,"digit"))),note:`<b>Zoned:</b> mỗi chữ số 1 byte dạng F<i>d</i>. Chữ số cuối mang ký hiệu dấu <b>${signName}</b>. Zoned = <b class="mono">${z.zon}</b>, chiếm <b>${n} byte</b>.`});
+  const flat=[];[...ds].forEach((d,i)=>{if(i<n-1)flat.push(["F","zone"]);flat.push([d,"digit"])});
+  f.push({html:`<div class="nibs">${flat.map(([v,c])=>nib(v,c)).join("")}${nib(sn,"sign")}</div>`,note:`<b>Bước 1:</b> đưa ký hiệu dấu <b>${sn}</b> ra cực phải.`});
+  f.push({html:`<div class="nibs">${flat.map(([v,c])=>nib(v,c==="zone"?"zone gone":c)).join("")}${nib(sn,"sign")}</div>`,note:`<b>Bước 2:</b> bỏ hết các chữ F vùng còn lại${n>1?` (${n-1} chữ F)`:""}.`});
+  const odd=(n+1)%2===1;
+  f.push({html:`<div class="nibs">${odd?nib("0","pad"):""}${[...ds].map(d=>nib(d,"digit")).join("")}${nib(sn,"sign")}</div>`,note:odd?`<b>Bước 3:</b> còn ${n+1} chữ số hex, là số lẻ, nên <b>thêm 0 bên trái</b> cho đủ byte.`:`<b>Bước 3:</b> còn ${n+1} chữ số hex, là số chẵn, không cần thêm 0.`});
+  const pk=z.pk,arr=[];for(let i=0;i<pk.length;i+=2)arr.push([pk[i],pk[i+1]].map((v,j)=>nib(v,(i+j===pk.length-1)?"sign":(odd&&i+j===0)?"pad":"digit")).join(""));
+  f.push({html:bytes(arr)+`<div class="zp-meta"><span class="pill">Zoned <b>${z.zon}</b> · ${z.zb} byte</span><span class="pill">Packed <b>${pk}</b> · ${z.pb} byte</span></div>`,note:`<b>Ghép mỗi 2 chữ số thành 1 byte:</b> Packed = <b class="mono">${pk}</b>. Số byte = (${n} + 1) / 2 làm tròn lên = <b>${z.pb}</b>.`});
+  return f}
+const zpSt=Stepper($("#zp-step"));
+function renderZP(){zpSt.load(zpFrames(clean($("#zp-num").value).replace("−","-")))}
+$("#zp-num").addEventListener("input",renderZP);
+function openZP(v){$("#zp-num").value=v;renderZP()}
+
+/* ---------- sorting ---------- */
+const keyA=s=>[...s].map(c=>c.charCodeAt(0));
+const keyE=s=>[...s].map(c=>parseInt(codes(c).eh,16));
+function cmpK(a,b){for(let i=0;i<Math.min(a.length,b.length);i++)if(a[i]!==b[i])return a[i]-b[i];return a.length-b.length}
+const parseList=s=>s.toUpperCase().split(/[,;<\n]+/).map(x=>x.replace(/\s/g,"")).filter(Boolean);
+function why(x,y,kf,name){const a=kf(x),b=kf(y);for(let i=0;i<Math.min(a.length,b.length);i++)if(a[i]!==b[i])return `ký tự thứ ${i+1}: ${x[i]} (${a[i].toString(16).toUpperCase()}) &lt; ${y[i]} (${b[i].toString(16).toUpperCase()})`;return x.length===y.length?"bằng nhau":`${x} ngắn hơn`}
+function sortCol(items,kf,title,rule,hexf){const s=[...items].sort((p,q)=>cmpK(kf(p),kf(q)));
+  return `<div class="sortcol"><h3>${title}</h3><p class="rule">${rule}</p>${s.map((x,i)=>`<div class="sitem"><span>${x}</span><small>${hexf(x)}</small></div>${i<s.length-1?`<div class="why">↓ ${why(x,s[i+1],kf)}</div>`:""}`).join("")}
+  <p style="margin:10px 0 0;font-family:var(--f-mono);font-weight:600">${s.join(", ")}</p></div>`}
+function renderSort(){const items=parseList($("#sort-in").value),out=$("#sort-out");
+  if(!items.length){out.innerHTML=errBox("Nhập ít nhất một mục.");return}
+  const bad=items.filter(x=>[...x].some(c=>!cinfo(c)));if(bad.length){out.innerHTML=errBox(`Chỉ dùng chữ A–Z và số 0–9. Mục không hợp lệ: ${esc(bad.join(", "))}`);return}
+  out.innerHTML=`<div class="sortcols">${sortCol(items,keyA,"ASCII","Số &lt; chữ. Mã hex mỗi ký tự:",x=>[...x].map(c=>codes(c).a7h).join(" "))}${sortCol(items,keyE,"EBCDIC","Chữ &lt; số. Mã hex mỗi ký tự:",x=>[...x].map(c=>codes(c).eh).join(" "))}</div>`}
+$("#sort-in").addEventListener("input",renderSort);
+function openSort(v){$("#sort-in").value=v;renderSort()}
+
+/* ---------- example chips ---------- */
+document.addEventListener("click",e=>{const c=e.target.closest(".chip");if(!c)return;const d=c.dataset;
+  if(d.conv){const[a,b,t]=d.conv.split(",");openConv(a,b,t)}
+  if(d.add){const[a,b]=d.add.split(",");openAdd(a,b)}
+  if(d.sub){const[a,b,m]=d.sub.split(",");openSub(a,b,m)}
+  if(d.mul){const[a,b]=d.mul.split(",");openMul(a,b)}
+  if(d.div){const[a,b]=d.div.split(",");openDiv(a,b)}
+  if(d.code)openCode(d.code);if(d.zp)openZP(d.zp);if(d.sort)openSort(d.sort)});
+
+/* ---------- quiz ---------- */
+const ri=(a,b)=>a+Math.floor(Math.random()*(b-a+1)),pick=a=>a[Math.floor(Math.random()*a.length)];
+const rb=n=>"1"+[...Array(n-1)].map(()=>Math.random()<.5?"0":"1").join("");
+const WORDS=["BIT","BYTE","CODE","DATA","BASE","DIGIT","CPU","RAM","ROM","DISK","FILE","MOUSE","HOST","ZONE","SKY","STAR","LOGIC","WORD","JAVA","LINUX","PRINT","QUIZ","TEST","SUN","MOON","CAT","DOG","WEB","VIRUS","TYPE","GIVE","WET","DRY"];
+function parseNum(s,base){s=clean(s).toUpperCase().replace("−","-");if(!s)return null;let neg=false;if(s[0]==="-"){neg=true;s=s.slice(1)}else if(s[0]==="+")s=s.slice(1);
+  if(!s||[...s].some(c=>isNaN(dv(c))||dv(c)>=base))return null;let v=0n;for(const c of s)v=v*BigInt(base)+BigInt(dv(c));return neg?-v:v}
+const fNum=(key,label,base,ans,disp)=>({key,label,kind:"num",base,ans:BigInt(ans),disp:disp||ans.toString(base).toUpperCase()});
+const fStr=(key,label,ans)=>({key,label,kind:"str",ans});
+const fList=(key,label,ans)=>({key,label,kind:"list",ans});
+const fFloat=(key,label,ans)=>({key,label,kind:"float",ans});
+const binDisp=v=>(v<0n?"−":"")+(v<0n?-v:v).toString(2);
+const sortItems=()=>{const pool=["128","400","512","23","245","123","90","7Z","A1","1A","BED","BAD","ABC","ADD","B2","Z9","CAT","9C"];const s=new Set();while(s.size<ri(4,5))s.add(pick(pool));return[...s]};
+const signedNum=()=>{const n=String(ri(10,99999));return pick(["","+","-"])+n};
+const GEN={
+ coso:[
+  ()=>{const n=ri(5,255);return{p:`Đổi <span class="mono">${n}<sub>10</sub></span> sang hệ 2.`,fields:[fNum("a","Kết quả hệ 2",2,BigInt(n))],open:()=>{go("co-so");openConv(n,10,2)}}},
+  ()=>{const s=rb(ri(4,8));return{p:`Đổi <span class="mono">${s}<sub>2</sub></span> sang hệ 10.`,fields:[fNum("a","Kết quả hệ 10",10,B(s))],open:()=>{go("co-so");openConv(s,2,10)}}},
+  ()=>{const s=rb(ri(7,14));return{p:`Đổi <span class="mono">${s}<sub>2</sub></span> sang hệ 16.`,fields:[fNum("a","Kết quả hệ 16",16,B(s))],open:()=>{go("co-so");openConv(s,2,16)}}},
+  ()=>{const h=ri(0x20,0xFFF).toString(16).toUpperCase();return{p:`Đổi <span class="mono">${h}<sub>16</sub></span> sang hệ 2.`,fields:[fNum("a","Kết quả hệ 2",2,BigInt("0x"+h))],open:()=>{go("co-so");openConv(h,16,2)}}},
+  ()=>{const n=ri(20,999);return{p:`Đổi <span class="mono">${n}<sub>10</sub></span> sang hệ 8.`,fields:[fNum("a","Kết quả hệ 8",8,BigInt(n))],open:()=>{go("co-so");openConv(n,10,8)}}},
+  ()=>{const s=rb(ri(2,4))+"."+[...Array(ri(1,3))].map(()=>pick("01")).join("");const[i,f]=s.split(".");let v=parseInt(i,2);[...f].forEach((c,k)=>v+=+c*Math.pow(2,-(k+1)));
+    return{p:`Đổi <span class="mono">${s}<sub>2</sub></span> sang hệ 10.`,fields:[fFloat("a","Kết quả hệ 10 (dùng dấu chấm)",v)],open:()=>{go("co-so");openConv(s,2,10)}}},
+ ],
+ phep:[
+  ()=>{const a=rb(ri(4,7)),b=rb(ri(3,7));return{p:`Tính <span class="mono">${a} + ${b}</span> (hệ 2).`,fields:[fNum("a","Kết quả hệ 2",2,B(a)+B(b))],open:()=>{go("cong");openAdd(a,b)}}},
+  ()=>{let a=rb(ri(5,7)),b=rb(ri(3,6));if(B(a)<B(b))[a,b]=[b,a];return{p:`Tính <span class="mono">${a} − ${b}</span> (trừ thường, hệ 2).`,fields:[fNum("a","Kết quả hệ 2",2,B(a)-B(b))],open:()=>{go("tru");openSub(a,b,"muon")}}},
+  ()=>{const a=rb(ri(5,8)),b=rb(ri(5,8));const v=B(a)-B(b);return{p:`Dùng phép <b>trừ bù 1</b> tính <span class="mono">${a} − ${b}</span>. Kết quả âm thì ghi dấu − ở đầu.`,fields:[{...fNum("a","Kết quả hệ 2",2,v),disp:binDisp(v)}],open:()=>{go("tru");openSub(a,b,"bu1")}}},
+  ()=>{const a=rb(ri(3,5)),b=rb(ri(2,4));return{p:`Tính <span class="mono">${a} × ${b}</span> (hệ 2).`,fields:[fNum("a","Kết quả hệ 2",2,B(a)*B(b))],open:()=>{go("nhan-chia");openMul(a,b)}}},
+  ()=>{const d=ri(2,7),q=ri(2,15),r=ri(0,d-1),D=(d*q+r).toString(2),ds=d.toString(2);return{p:`Tính <span class="mono">${D} : ${ds}</span> (hệ 2).`,fields:[fNum("q","Thương (hệ 2)",2,BigInt(q)),fNum("r","Số dư (hệ 2)",2,BigInt(r))],open:()=>{go("nhan-chia");openDiv(D,ds)}}},
+ ],
+ ma:[
+  ()=>{const w=pick(WORDS);return{p:`Viết mã <b>BCD nhị phân</b> của <span class="mono">${w}</span>.`,fields:[fStr("a","Các nhóm 6 bit",[...w].map(c=>codes(c).bcd).join(""))],show:[...w].map(c=>codes(c).bcd).join(" "),open:()=>{go("bang-ma");openCode(w)}}},
+  ()=>{const w=pick(WORDS);return{p:`Viết mã <b>BCD bát phân</b> của <span class="mono">${w}</span>.`,fields:[fStr("a","Các cặp số bát phân",[...w].map(c=>codes(c).bcdO).join(""))],show:[...w].map(c=>codes(c).bcdO).join(" "),open:()=>{go("bang-ma");openCode(w)}}},
+  ()=>{const w=pick(WORDS);return{p:`Viết mã <b>EBCDIC hex</b> của <span class="mono">${w}</span>.`,fields:[fStr("a","Các byte hex",[...w].map(c=>codes(c).eh).join(""))],show:[...w].map(c=>codes(c).eh).join(" "),open:()=>{go("bang-ma");openCode(w)}}},
+  ()=>{const w=pick(WORDS);return{p:`Viết mã <b>EBCDIC nhị phân</b> của <span class="mono">${w}</span>.`,fields:[fStr("a","Các byte 8 bit",[...w].map(c=>codes(c).eb).join(""))],show:[...w].map(c=>codes(c).eb).join(" "),open:()=>{go("bang-ma");openCode(w)}}},
+  ()=>{const w=pick(WORDS);return{p:`Viết mã <b>ASCII-7 hex</b> của <span class="mono">${w}</span>.`,fields:[fStr("a","Các byte hex",[...w].map(c=>codes(c).a7h).join(""))],show:[...w].map(c=>codes(c).a7h).join(" "),open:()=>{go("bang-ma");openCode(w)}}},
+  ()=>{const w=pick(WORDS);return{p:`Viết mã <b>ASCII-7 nhị phân</b> của <span class="mono">${w}</span>.`,fields:[fStr("a","Các nhóm 7 bit",[...w].map(c=>codes(c).a7b).join(""))],show:[...w].map(c=>codes(c).a7b).join(" "),open:()=>{go("bang-ma");openCode(w)}}},
+  ()=>{const w=pick(WORDS);return{p:`Viết mã <b>ASCII-8 hex</b> (theo bảng trong slide) của <span class="mono">${w}</span>.`,fields:[fStr("a","Các byte hex",[...w].map(c=>codes(c).a8h).join(""))],show:[...w].map(c=>codes(c).a8h).join(" "),open:()=>{go("bang-ma");openCode(w)}}},
+  ()=>{const w=pick(WORDS),h=[...w].map(c=>codes(c).eh).join(" ");return{p:`Dãy mã <b>EBCDIC hex</b> <span class="mono">${h}</span> là từ gì?`,fields:[fStr("a","Từ",w)],show:w,open:()=>{go("bang-ma");openCode(w)}}},
+ ],
+ zp:[
+  ()=>{const n=signedNum(),z=zpInfo(n);return{p:`Viết số <span class="mono">${n.replace("-","−")}</span> ở dạng <b>Zoned decimal</b> (hex).`,fields:[fStr("a","Zoned",z.zon)],open:()=>{go("zoned-packed");openZP(n)}}},
+  ()=>{const n=signedNum(),z=zpInfo(n);return{p:`Viết số <span class="mono">${n.replace("-","−")}</span> ở dạng <b>Packed decimal</b> (hex).`,fields:[fStr("a","Packed",z.pk)],open:()=>{go("zoned-packed");openZP(n)}}},
+  ()=>{const n=signedNum(),z=zpInfo(n);return{p:`Số <span class="mono">${n.replace("-","−")}</span> chiếm bao nhiêu byte ở mỗi dạng?`,fields:[fNum("z","Zoned (byte)",10,BigInt(z.zb)),fNum("p","Packed (byte)",10,BigInt(z.pb))],open:()=>{go("zoned-packed");openZP(n)}}},
+ ],
+ sx:[
+  ()=>{const it=sortItems(),code=pick(["ASCII","EBCDIC"]),kf=code==="ASCII"?keyA:keyE,s=[...it].sort((p,q)=>cmpK(kf(p),kf(q)));
+    return{p:`Sắp xếp tăng dần theo <b>${code}</b>: <span class="mono">${it.join(", ")}</span>`,fields:[fList("a","Thứ tự (cách nhau bằng dấu phẩy)",s)],show:s.join(", "),open:()=>{go("sap-xep");openSort(it.join(", "))}}},
+ ],
+ lt:[
+  ()=>({p:"Mã BCD dùng bao nhiêu bit cho 1 ký tự và biểu diễn được bao nhiêu ký tự?",opts:["6 bit, 64 ký tự","7 bit, 128 ký tự","8 bit, 256 ký tự","4 bit, 16 ký tự"],c:0,ex:"BCD gồm 2 bit vùng + 4 bit số = 6 bit, nên có 2⁶ = 64 ký tự."}),
+  ()=>({p:"Cấu trúc của mã EBCDIC là gì?",opts:["4 bit vùng + 4 bit số","2 bit vùng + 4 bit số","3 bit vùng + 4 bit số","8 bit số, không có vùng"],c:0,ex:"EBCDIC 8 bit = 4 bit vùng + 4 bit số, mở rộng từ BCD."}),
+  ()=>({p:"Cấu trúc của mã ASCII-7 là gì?",opts:["3 bit vùng + 4 bit số","4 bit vùng + 4 bit số","2 bit vùng + 4 bit số","7 bit số"],c:0,ex:"ASCII-7 = 3 bit vùng + 4 bit số, có 2⁷ = 128 ký tự."}),
+  ()=>({p:"Vì sao EBCDIC được mở rộng từ BCD?",opts:["BCD 6 bit chỉ có 64 ký tự, không đủ chữ thường và ký tự đặc biệt","BCD không biểu diễn được chữ số","BCD chạy chậm hơn EBCDIC","BCD không dùng được trên máy IBM"],c:0,ex:"BCD chỉ có 64 ký tự. EBCDIC 8 bit có 256 ký tự."}),
+  ()=>({p:"Vì sao dùng dạng Packed decimal?",opts:["Máy chỉ tính số học được ở dạng packed, và nó tiết kiệm bộ nhớ","Packed dễ đọc hơn zoned","Packed không cần ký hiệu dấu","Packed dùng cho chữ cái"],c:0,ex:"Packed lưu 2 chữ số/byte (zoned chỉ 1) và là dạng máy dùng để tính toán."}),
+  ()=>({p:"Trong Zoned decimal, ký hiệu dấu nằm ở đâu?",opts:["Nửa byte trái của chữ số cuối","Nửa byte phải của chữ số cuối","Byte đầu tiên","Một byte riêng ở cuối"],c:0,ex:"Ví dụ −345 = F3 F4 D5: chữ D nằm ở nửa trái byte cuối."}),
+  ()=>({p:"Trong zoned/packed, chữ D mang nghĩa gì?",opts:["Số âm","Số dương","Không dấu","Chữ số 13"],c:0,ex:"C = dương, D = âm, F = không dấu."}),
+  ()=>({p:"Trong EBCDIC, quan hệ thứ tự giữa chữ và số là gì?",opts:["Chữ < số","Số < chữ","Bằng nhau","Tùy độ dài chuỗi"],c:0,ex:"Chữ C1–E9 nhỏ hơn số F0–F9. ASCII thì ngược lại."}),
+  ()=>({p:"Mã EBCDIC hex của chữ S là?",opts:["E2","E1","D9","E3"],c:0,ex:"Nhóm S–Z bắt đầu đếm từ 2: S = E2, T = E3, …, Z = E9."}),
+  ()=>({p:"ASCII-7 và ASCII-8 giống nhau ở điểm nào?",opts:["128 ký tự đầu như nhau, 1 ký tự lưu trong 1 byte","Đều có 256 ký tự","Đều dùng 7 bit","Đều có 4 bit vùng"],c:0,ex:"Khác nhau ở 7 bit/128 ký tự so với 8 bit/256 ký tự."}),
+  ()=>({p:"Các dạng mã hóa của Unicode là?",opts:["UTF-8, UTF-16, UTF-32","BCD, EBCDIC, ASCII","Zoned, Packed","ASCII-7, ASCII-8"],c:0,ex:"Unicode là chuẩn quốc tế; mỗi ký tự có 1 số và 1 tên duy nhất."}),
+ ]};
+const TOPIC_NAMES={coso:"Đổi cơ số",phep:"Phép toán",ma:"Bảng mã",zp:"Zoned / Packed",sx:"Sắp xếp",lt:"Lý thuyết"};
+const active=new Set(Object.keys(TOPIC_NAMES));
+let score={ok:0,total:0,streak:0},cur=null,answered=false;
+$("#topics").innerHTML=Object.entries(TOPIC_NAMES).map(([k,v])=>`<button type="button" class="topic" data-t="${k}" aria-pressed="true">${v}</button>`).join("");
+$("#topics").addEventListener("click",e=>{const b=e.target.closest(".topic");if(!b)return;const t=b.dataset.t;
+  if(active.has(t)){if(active.size===1)return;active.delete(t)}else active.add(t);b.setAttribute("aria-pressed",String(active.has(t)));newQ()});
+function renderScore(){$("#score").innerHTML=`<span>Đúng <b>${score.ok}</b>/${score.total}</span><span>Chuỗi đúng liên tiếp <b>${score.streak}</b></span>`}
+function newQ(){const t=pick([...active]);const q=pick(GEN[t])();q.topic=t;cur=q;answered=false;
+  let h=`<span class="qtag">${TOPIC_NAMES[t]}</span><div class="qtext">${q.p}</div>`;
+  if(q.opts){const order=q.opts.map((o,i)=>i).sort(()=>Math.random()-.5);q.order=order;
+    h+=`<div class="opts">${order.map(i=>`<button type="button" class="opt" data-o="${i}">${esc(q.opts[i])}</button>`).join("")}</div><div id="fb"></div><div class="ctrl"><button type="button" class="btn" id="q-next">Câu khác →</button></div>`}
+  else{h+=`<div class="qfields">${q.fields.map((f,i)=>`<div class="field"><label for="qf-${i}">${f.label}</label><input type="text" id="qf-${i}" autocomplete="off" spellcheck="false"></div>`).join("")}</div>
+    <div class="ctrl"><button type="button" class="btn" id="q-check">Kiểm tra</button><button type="button" class="btn ghost" id="q-next">Câu khác →</button></div><div id="fb"></div>`}
+  $("#qcard").innerHTML=h;const first=$("#qf-0");if(first&&document.activeElement&&document.activeElement.closest&&document.activeElement.closest("#qcard,#topics"))first.focus()}
+function judge(f,v){if(f.kind==="num"){const x=parseNum(v,f.base);return x!==null&&x===f.ans}
+  if(f.kind==="float"){const x=parseFloat(v.replace(",","."));return!isNaN(x)&&Math.abs(x-f.ans)<1e-9}
+  if(f.kind==="str")return clean(v).toUpperCase()===f.ans.toUpperCase();
+  if(f.kind==="list")return parseList(v).join(",")===f.ans.join(",");return false}
+function dispAns(q,f){if(q.show&&q.fields.length===1)return q.show;if(f.kind==="float")return String(f.ans);if(f.kind==="list")return f.ans.join(", ");return f.disp||f.ans}
+function finish(ok,html){if(answered)return;answered=true;score.total++;if(ok){score.ok++;score.streak++}else score.streak=0;renderScore();$("#fb").innerHTML=html}
+$("#qcard").addEventListener("click",e=>{
+  if(e.target.closest("#q-next")){newQ();return}
+  if(e.target.closest("#q-open")){cur.open&&cur.open();return}
+  const o=e.target.closest(".opt");if(o&&cur.opts&&!answered){const i=+o.dataset.o,ok=i===cur.c;
+    $$(".opt").forEach(b=>{b.disabled=true;if(+b.dataset.o===cur.c)b.classList.add("ok")});if(!ok)o.classList.add("no");
+    finish(ok,`<div class="fb ${ok?"ok":"no"}"><b>${ok?"Chính xác.":"Chưa đúng."}</b> ${esc(cur.ex)}</div>`);return}
+  if(e.target.closest("#q-check"))check()});
+$("#qcard").addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.matches(".qfields input")){e.preventDefault();if(answered)newQ();else check()}});
+function check(){if(answered||!cur||cur.opts)return;let all=true;
+  cur.fields.forEach((f,i)=>{const inp=$("#qf-"+i),ok=judge(f,inp.value);inp.classList.toggle("ok",ok);inp.classList.toggle("no",!ok);if(!ok)all=false});
+  const ans=cur.fields.map(f=>`${cur.fields.length>1?f.label+": ":""}<span class="ans">${dispAns(cur,f)}</span>`).join("<br>");
+  finish(all,`<div class="fb ${all?"ok":"no"}"><b>${all?"Chính xác.":"Chưa đúng."}</b> Đáp án: ${ans}${cur.open?`<div style="margin-top:8px"><button type="button" class="btn ghost" id="q-open">Xem cách giải từng bước</button></div>`:""}</div>`)}
+renderScore();
+
+/* ---------- routing ---------- */
+const TABS=["co-so","cong","tru","nhan-chia","bang-ma","zoned-packed","sap-xep","luyen-tap"];
+function show(){const h=location.hash.slice(1),t=TABS.includes(h)?h:"co-so";
+  TABS.forEach(x=>{$("#p-"+x).hidden=x!==t});$$(".tab").forEach(a=>a.toggleAttribute("aria-current",false));const cur_=$(`.tab[data-tab="${t}"]`);cur_.setAttribute("aria-current","page");
+  try{cur_.scrollIntoView({block:"nearest",inline:"nearest"})}catch(_){}}
+function go(t){if(location.hash!=="#"+t)location.hash=t;else show();const nav=$(".tabs");window.scrollTo({top:nav.offsetTop,behavior:"auto"})}
+window.addEventListener("hashchange",show);
+
+/* init */
+renderReg();renderConv();renderAdd();renderSub();renderMul();renderDiv();renderCodes();showKey("O");renderZP();renderSort();newQ();show();
+})();
+</script>
+</body>
+</html>
