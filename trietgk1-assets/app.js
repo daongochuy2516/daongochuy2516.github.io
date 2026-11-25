@@ -726,6 +726,7 @@
 
   function refreshHomeIfVisible() {
     if (!$('home').classList.contains('hidden')) renderHome();
+    if (!$('answers').classList.contains('hidden')) renderAnswers();
   }
 
   function openData() {
@@ -824,9 +825,162 @@
     });
   });
 
+  // ================= ANSWER BANK =================
+  // Original questions in source order, options A–D unshuffled, correct one highlighted.
+  const ANS_KEY = 'triet_answers';
+  const ANS_HASH = '#dap-an';
+  const ans = Object.assign({ bank: 'p1', view: 'full' }, store.get(ANS_KEY, {}));
+  if (!BANKS[ans.bank]) ans.bank = 'p1';
+  if (ans.view !== 'compact') ans.view = 'full';
+  let ansQuery = '';
+  let ansReturn = 'home';
+  let ansPushed = false;
+
+  // Accent-insensitive folding (Vietnamese): "Vật chất" → "vat chat". One output char per input char.
+  function foldChar(c) {
+    if (c === 'đ' || c === 'Đ') return 'd';
+    return c.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  }
+  function foldMap(s) {
+    let f = '';
+    const map = [];
+    let i = 0;
+    for (const c of s) {
+      const fc = foldChar(c);
+      for (let j = 0; j < fc.length; j++) { f += fc[j]; map.push(i); }
+      i += c.length;
+    }
+    map.push(i);
+    return { f, map };
+  }
+  const fold = (s) => foldMap(s).f.replace(/\s+/g, ' ');
+
+  const FOLDED = {};
+  const foldedOf = (k) => FOLDED[k] || (FOLDED[k] = { q: fold(ALL[k].q), o: ALL[k].o.map(fold) });
+
+  // Escape text and wrap every (accent-insensitive) occurrence of q in <mark>.
+  function hl(text, q) {
+    if (!q) return esc(text);
+    const { f, map } = foldMap(text);
+    let out = '', last = 0, from = 0, idx;
+    while ((idx = f.indexOf(q, from)) !== -1) {
+      const s = map[idx], e = map[idx + q.length];
+      if (s >= last) {
+        out += esc(text.slice(last, s)) + '<mark>' + esc(text.slice(s, e)) + '</mark>';
+        last = e;
+      }
+      from = idx + q.length;
+    }
+    return out + esc(text.slice(last));
+  }
+
+  function renderAnsBanks() {
+    const list = DATA.banks.map((b) => ({ id: b.id, name: b.name, count: b.qs.length }));
+    list.push({ id: 'all', name: 'Tất cả', count: BANKS.all.length });
+    $('ansBanks').innerHTML = list.map((b) =>
+      `<button data-b="${b.id}" class="${b.id === ans.bank ? 'active' : ''}">${esc(b.name)} <span class="chip-n">${b.count}</span></button>`).join('');
+    setActiveChip('ansView', 'v', ans.view);
+  }
+
+  function renderAnswers() {
+    const raw = ansQuery.trim();
+    const fq = fold(raw);
+    const numMatch = fq.match(/^(?:cau\s*)?(\d+)$/);
+    const keys = BANKS[ans.bank] || [];
+    let hits;
+    let hq = '';
+    if (!fq) hits = keys;
+    else if (numMatch) {
+      const n = parseInt(numMatch[1], 10);
+      hits = keys.filter((k) => ALL[k].n === n);
+    } else {
+      hq = fq;
+      hits = keys.filter((k) => { const F = foldedOf(k); return F.q.includes(fq) || F.o.some((o) => o.includes(fq)); });
+    }
+
+    $('ansCount').textContent = fq
+      ? `Tìm thấy ${hits.length} / ${keys.length} câu`
+      : `${keys.length} câu`;
+
+    if (!hits.length) {
+      $('ansList').innerHTML = '<div class="empty">Không tìm thấy câu nào khớp.</div>';
+      return;
+    }
+    const compact = ans.view === 'compact';
+    const showBank = ans.bank === 'all';
+    $('ansList').innerHTML = hits.map((k) => {
+      const q = ALL[k];
+      const opts = compact
+        ? `<div class="rv-opt correct"><b>${LETTERS[q.a]}.</b><span>${hl(q.o[q.a], hq)}</span></div>`
+        : q.o.map((o, i) => `<div class="rv-opt ${i === q.a ? 'correct' : ''}"><b>${LETTERS[i]}.</b><span>${hl(o, hq)}</span></div>`).join('');
+      return `
+      <div class="rv ans-item">
+        <div class="rv-top"><span class="ans-num">Câu ${q.n}</span>${showBank ? `<span class="muted">${esc(q.bankName)}</span>` : ''}<span class="ans-key">Đáp án ${LETTERS[q.a]}</span>${wrongSet.has(k) ? '<span class="ans-flag">Từng làm sai</span>' : ''}</div>
+        <p class="rv-q">${hl(q.q, hq)}</p>
+        <div class="rv-opts">${opts}</div>
+      </div>`;
+    }).join('');
+  }
+
+  const visible = (id) => !$(id).classList.contains('hidden');
+
+  function openAnswers(push) {
+    if (S && !S.done) return; // never during a quiz (would leak answers in exam mode)
+    if (visible('answers')) return;
+    ansReturn = visible('result') && lastResult ? 'result' : 'home';
+    if (push !== false && location.hash !== ANS_HASH) { history.pushState(null, '', ANS_HASH); ansPushed = true; }
+    renderAnsBanks();
+    renderAnswers();
+    show('answers');
+    window.scrollTo({ top: 0 });
+  }
+  function leaveAnswers() {
+    if (ansReturn === 'result' && lastResult) show('result'); else goHome();
+    window.scrollTo({ top: 0 });
+  }
+  function closeAnswers() {
+    if (ansPushed) { ansPushed = false; history.back(); return; } // popstate → leaveAnswers
+    leaveAnswers();
+  }
+
+  window.addEventListener('popstate', () => {
+    if (location.hash === ANS_HASH) openAnswers(false);
+    else if (visible('answers')) { ansPushed = false; leaveAnswers(); }
+  });
+
+  $('answersBtn').addEventListener('click', () => (visible('answers') ? closeAnswers() : openAnswers()));
+  $('ansBack').addEventListener('click', closeAnswers);
+
+  $('ansBanks').addEventListener('click', (e) => {
+    const b = e.target.closest('button'); if (!b) return;
+    ans.bank = b.dataset.b; store.set(ANS_KEY, ans);
+    renderAnsBanks(); renderAnswers();
+  });
+  $('ansView').addEventListener('click', (e) => {
+    const b = e.target.closest('button'); if (!b) return;
+    ans.view = b.dataset.v; store.set(ANS_KEY, ans);
+    setActiveChip('ansView', 'v', ans.view); renderAnswers();
+  });
+  let ansTimer = null;
+  $('ansSearch').addEventListener('input', (e) => {
+    clearTimeout(ansTimer);
+    ansTimer = setTimeout(() => { ansQuery = e.target.value; renderAnswers(); }, 120);
+  });
+
+  $('toTop').addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+  window.addEventListener('scroll', () => {
+    $('toTop').classList.toggle('hidden', !visible('answers') || window.scrollY < 600);
+  }, { passive: true });
+
   // ================= NAV / KEYS =================
   function show(id) {
-    ['home', 'quiz', 'result'].forEach((s) => $(s).classList.toggle('hidden', s !== id));
+    ['home', 'quiz', 'result', 'answers'].forEach((s) => $(s).classList.toggle('hidden', s !== id));
+    $('answersBtn').classList.toggle('hidden', id === 'quiz');
+    $('answersBtn').classList.toggle('active', id === 'answers');
+    if (id !== 'answers') {
+      $('toTop').classList.add('hidden');
+      if (location.hash === ANS_HASH) { history.replaceState(null, '', location.pathname + location.search); ansPushed = false; }
+    }
   }
   function goHome() {
     try { localStorage.removeItem(RESULT_KEY); } catch (e) { /* ignore */ }
@@ -840,6 +994,16 @@
     }
     if (isOpen($('dataModal'))) {
       if (e.key === 'Escape') closeData();
+      return;
+    }
+    if (visible('answers')) {
+      const box = $('ansSearch');
+      if (e.target === box && e.key === 'Escape') {
+        e.preventDefault();
+        if (box.value) { box.value = ''; ansQuery = ''; renderAnswers(); } else box.blur();
+      } else if (e.key === '/' && e.target.tagName !== 'INPUT' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault(); box.focus(); box.select();
+      }
       return;
     }
     if (!S || S.done || $('quiz').classList.contains('hidden')) return;
@@ -865,5 +1029,6 @@
     clearSession();
     const R = loadResult();
     if (R) showResult(R);
+    if (location.hash === ANS_HASH) openAnswers(false);
   }
 })();
