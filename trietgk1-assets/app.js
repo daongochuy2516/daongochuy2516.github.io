@@ -949,7 +949,6 @@
   });
 
   $('answersBtn').addEventListener('click', () => (visible('answers') ? closeAnswers() : openAnswers()));
-  $('answersLink').addEventListener('click', () => openAnswers());
   $('ansBack').addEventListener('click', closeAnswers);
 
   $('ansBanks').addEventListener('click', (e) => {

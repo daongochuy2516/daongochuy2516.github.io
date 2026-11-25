@@ -350,8 +350,6 @@ kbd { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size:
 .data-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 20px; background: var(--surface-2); flex-wrap: wrap; }
 
 /* ---------- Answer bank ---------- */
-.hero-link { margin-top: 10px; padding: 0; border: 0; background: none; color: var(--primary); font-size: 14px; font-weight: 500; }
-.hero-link:hover { text-decoration: underline; text-underline-offset: 3px; }
 .icon-btn.active { color: var(--primary); border-color: color-mix(in srgb, var(--primary) 45%, var(--border)); background: var(--primary-soft); }
 #answers { max-width: 860px; }
 .ans-head { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 16px; }
